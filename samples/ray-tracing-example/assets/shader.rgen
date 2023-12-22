@@ -1,0 +1,99 @@
+#version 460
+
+#extension GL_EXT_ray_tracing:enable
+#extension GL_GOOGLE_include_directive:require
+#extension GL_EXT_nonuniform_qualifier : require
+
+#include "ShaderDatas.glsl"
+
+layout(set=0,binding=0) uniform accelerationStructureEXT tlas;
+layout(set=0,binding=1,rgba8) uniform image2D ResultImage;
+layout(set=0,binding=2,std140) uniform AppData{UniformParams Params;};
+
+layout(location=0) rayPayloadEXT RayPayload PrimaryRay;
+
+vec3 CalcRayDir(vec2 screenUV,float aspect)
+{
+    vec3 u=Params.camSide.xyz;
+    vec3 v=Params.camUp.xyz;
+
+    const float planeWidth=tan(Params.camNearFarFov.z*0.5f);
+    u*=(planeWidth*aspect);
+    v*=(planeWidth);
+
+    const vec3 rayDir=normalize(Params.camDir.xyz+(u*screenUV.x)-(v*screenUV.y));
+    return rayDir;
+}
+
+void main()
+{
+    const vec2 curPixel=vec2(gl_LaunchIDEXT.xy);
+    const vec2 bottomRight=vec2(gl_LaunchSizeEXT.xy-1);
+
+    const vec2 uv=(curPixel/bottomRight)*2.0f-1.0f;
+
+    const float aspect=float(gl_LaunchSizeEXT.x)/float(gl_LaunchSizeEXT.y);
+
+    vec3 origin=Params.camPos.xyz;
+
+    vec3 direction=CalcRayDir(uv,aspect);
+
+    const uint cullMask=0xFF;
+
+    const uint stbRecordStride=1;
+
+    const float tmin=0.0f;
+    const float tmax=Params.camNearFarFov.y;
+
+     uint rngState = uint(uint(gl_LaunchIDEXT.x) * uint(1973) + 
+                     uint(gl_LaunchIDEXT.y) * uint(9277) + 
+                     uint(Params.currentSamplesCount) * uint(26699)) | uint(1); 
+	PrimaryRay.randomSeed = rngState;
+
+    vec3 finalColor=vec3(0.0f);
+
+    for(int i=0;i<MAX_RECURSION;++i)
+    {
+        traceRayEXT(tlas,
+                    gl_RayFlagsOpaqueEXT,
+                    cullMask,
+                    0,
+                    stbRecordStride,
+                    0,
+                    origin,
+                    tmin,
+                    direction,
+                    tmax,
+                    0);
+        
+        const vec3 hitColor=PrimaryRay.color;
+        const float hitDistance=PrimaryRay.distance;
+        if(hitDistance<0.0f)
+        {
+            finalColor+=hitColor;
+            break;
+        }
+        origin=(origin)+direction*0.001f;
+
+        const float NdotD = dot(PrimaryRay.normal, direction);
+
+
+        vec3 refrNormal = PrimaryRay.normal;
+         float refrEta;
+
+            const float kBunnyRefractionIndex = 1.0f / 1.31f;
+
+        if(NdotD > 0.0f) 
+        {
+            refrNormal = -PrimaryRay.normal;
+            refrEta = 1.0f / kBunnyRefractionIndex;
+        } else 
+        {
+            refrNormal = PrimaryRay.normal;
+            refrEta = kBunnyRefractionIndex;
+        }
+
+        direction=refract(direction, PrimaryRay.normal, refrEta);
+    }
+    imageStore(ResultImage,ivec2(gl_LaunchIDEXT.xy),vec4(LinearToSRGB(finalColor),1.0f));
+}

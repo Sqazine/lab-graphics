@@ -1,0 +1,248 @@
+#include "SphScene.h"
+#include <iostream>
+
+SphScene::SphScene()
+{
+}
+
+SphScene::~SphScene()
+{
+}
+
+void SphScene::Init()
+{
+	// App::Instance().GetWindow()->Resize(1024, 768);
+
+	VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
+	colorBlendAttachment.blendEnable = VK_FALSE;
+	colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+	colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+	colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+	colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+	colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+	colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+	colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+
+	VkPipelineColorBlendStateCreateInfo colorBlendStateInfo = {};
+	colorBlendStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+	colorBlendStateInfo.pNext = nullptr;
+	colorBlendStateInfo.flags = 0;
+	colorBlendStateInfo.logicOpEnable = VK_FALSE;
+	colorBlendStateInfo.logicOp = VK_LOGIC_OP_COPY;
+	colorBlendStateInfo.attachmentCount = 1;
+	colorBlendStateInfo.pAttachments = &colorBlendAttachment;
+	colorBlendStateInfo.blendConstants[0] = 0.0f;
+	colorBlendStateInfo.blendConstants[1] = 0.0f;
+	colorBlendStateInfo.blendConstants[2] = 0.0f;
+	colorBlendStateInfo.blendConstants[3] = 0.0f;
+
+	mRasterPipelineLayout = std::make_unique<PipelineLayout>(*App::Instance().GetGraphicsContext()->GetDevice());
+
+	auto vertShader = App::Instance().GetGraphicsContext()->GetDevice()->CreateShader(ShaderStage::VERTEX, ReadFile(std::string(ASSETS_DIR) + "shaders/sph_particle.vert"));
+	auto fragShader = App::Instance().GetGraphicsContext()->GetDevice()->CreateShader(ShaderStage::FRAGMENT, ReadFile(std::string(ASSETS_DIR) + "shaders/sph_particle.frag"));
+
+	mRasterPipeline = std::make_unique<RasterPipeline>(*App::Instance().GetGraphicsContext()->GetDevice());
+
+	mRasterPipeline->SetVertexShader(vertShader)
+		.SetFragmentShader(fragShader)
+		.AddVertexInputBinding(0, sizeof(Vector2f))
+		.AddVertexInputAttribute(0, 0, 0, Format::R32G32_SFLOAT)
+		.SetPrimitiveTopology(PrimitiveTopology::POINT_LIST)
+		.SetPrimitiveRestartEnable(false)
+		.AddViewport(Vector2f::ZERO, App::Instance().GetGraphicsContext()->GetSwapChain()->GetExtent())
+		.AddScissor(Vector2i32::ZERO, App::Instance().GetGraphicsContext()->GetSwapChain()->GetExtent())
+		.SetPolygonMode(PolygonMode::FILL)
+		.SetFrontFace(FrontFace::CCW)
+		.SetPipelineLayout(mRasterPipelineLayout.get());
+
+	mRasterPipeline->pColorBlendState = colorBlendStateInfo;
+	mRasterPipeline->renderPass = App::Instance().GetGraphicsContext()->GetDefaultRenderPass()->GetHandle();
+
+	mRasterCommandBuffers = App::Instance().GetGraphicsContext()->GetDevice()->GetRasterCommandPool()->CreatePrimaryCommandBuffers(App::Instance().GetGraphicsContext()->GetDefaultFrameBuffers().size());
+
+	mImageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+	mRenderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+	mInFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+	mImagesInFlight.resize(App::Instance().GetGraphicsContext()->GetSwapChain()->GetImages().size(), nullptr);
+
+	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+	{
+		mImageAvailableSemaphores[i] = App::Instance().GetGraphicsContext()->GetDevice()->CreateSemaphore();
+		mRenderFinishedSemaphores[i] = App::Instance().GetGraphicsContext()->GetDevice()->CreateSemaphore();
+		mInFlightFences[i] = App::Instance().GetGraphicsContext()->GetDevice()->CreateFence(FenceStatus::SIGNALED);
+	}
+
+	mComputeDescriptorTable = std::make_unique<DescriptorTable>(*App::Instance().GetGraphicsContext()->GetDevice());
+	mComputeDescriptorTable->AddLayoutBinding(0, 1, DescriptorType::STORAGE_BUFFER, ShaderStage::COMPUTE);
+	mComputeDescriptorTable->AddLayoutBinding(1, 1, DescriptorType::STORAGE_BUFFER, ShaderStage::COMPUTE);
+	mComputeDescriptorTable->AddLayoutBinding(2, 1, DescriptorType::STORAGE_BUFFER, ShaderStage::COMPUTE);
+	mComputeDescriptorTable->AddLayoutBinding(3, 1, DescriptorType::STORAGE_BUFFER, ShaderStage::COMPUTE);
+	mComputeDescriptorTable->AddLayoutBinding(4, 1, DescriptorType::STORAGE_BUFFER, ShaderStage::COMPUTE);
+
+	mComputePipelineLayout = std::make_unique<PipelineLayout>(*App::Instance().GetGraphicsContext()->GetDevice());
+	mComputePipelineLayout->AddDescriptorSetLayout(mComputeDescriptorTable->GetLayout());
+
+	mComputePipelines[0] = std::make_unique<ComputePipeline>(*App::Instance().GetGraphicsContext()->GetDevice());
+	mComputePipelines[0]->SetShader(App::Instance().GetGraphicsContext()->GetDevice()->CreateShader(ShaderStage::COMPUTE, ReadFile(std::string(ASSETS_DIR) + "shaders/sph_density_pressure.comp"))).SetPipelineLayout(mComputePipelineLayout.get());
+
+	mComputePipelines[1] = std::make_unique<ComputePipeline>(*App::Instance().GetGraphicsContext()->GetDevice());
+	mComputePipelines[1]->SetShader(App::Instance().GetGraphicsContext()->GetDevice()->CreateShader(ShaderStage::COMPUTE, ReadFile(std::string(ASSETS_DIR) + "shaders/sph_force.comp"))).SetPipelineLayout(mComputePipelineLayout.get());
+
+	mComputePipelines[2] = std::make_unique<ComputePipeline>(*App::Instance().GetGraphicsContext()->GetDevice());
+	mComputePipelines[2]->SetShader(App::Instance().GetGraphicsContext()->GetDevice()->CreateShader(ShaderStage::COMPUTE, ReadFile(std::string(ASSETS_DIR) + "shaders/sph_integrate.comp"))).SetPipelineLayout(mComputePipelineLayout.get());
+
+	mComputeCommandBuffer = App::Instance().GetGraphicsContext()->GetDevice()->GetComputeCommandPool()->CreatePrimaryCommandBuffer();
+
+	mPositionBuffer = App::Instance().GetGraphicsContext()->GetDevice()->CreateGPUBuffer(mPosSsboSize, BufferUsage::VERTEX | BufferUsage::STORAGE | BufferUsage::TRANSFER_DST);
+	mVelocityBuffer = App::Instance().GetGraphicsContext()->GetDevice()->CreateGPUBuffer(mVelocitySsboSize, BufferUsage::STORAGE | BufferUsage::TRANSFER_DST);
+	mForceBuffer = App::Instance().GetGraphicsContext()->GetDevice()->CreateGPUBuffer(mForceSsboSize, BufferUsage::STORAGE | BufferUsage::TRANSFER_DST);
+	mDensityBuffer = App::Instance().GetGraphicsContext()->GetDevice()->CreateGPUBuffer(mDensitySsboSize, BufferUsage::STORAGE | BufferUsage::TRANSFER_DST);
+	mPressureBuffer = App::Instance().GetGraphicsContext()->GetDevice()->CreateGPUBuffer(mPressureSsboSize, BufferUsage::STORAGE | BufferUsage::TRANSFER_DST);
+
+	mComputeDescriptorSet = mComputeDescriptorTable->AllocateDescriptorSet();
+	mComputeDescriptorSet->WriteBuffer(0, mPositionBuffer.get());
+	mComputeDescriptorSet->WriteBuffer(1, mVelocityBuffer.get());
+	mComputeDescriptorSet->WriteBuffer(2, mForceBuffer.get());
+	mComputeDescriptorSet->WriteBuffer(3, mDensityBuffer.get());
+	mComputeDescriptorSet->WriteBuffer(4, mPressureBuffer.get()).Update();
+
+	std::array<Vector2f, PARTICLE_NUM> initParticlePosition;
+	for (auto i = 0, x = 0, y = 0; i < PARTICLE_NUM; ++i)
+	{
+		initParticlePosition[i].x = -0.625f + PARTICLE_RADIUS * 2 * x;
+		initParticlePosition[i].y = -1 + PARTICLE_RADIUS * 2 * y;
+		x++;
+		if (x >= 125)
+		{
+			x = 0;
+			y++;
+		}
+	}
+
+	InitParticleData(initParticlePosition);
+
+	for (size_t i = 0; i < mRasterCommandBuffers.size(); ++i)
+	{
+		VkRect2D renderArea{};
+		renderArea.extent = App::Instance().GetGraphicsContext()->GetSwapChain()->GetVkExtent();
+		renderArea.offset = {0, 0};
+
+		mRasterCommandBuffers[i]->Record([&]()
+										 {
+											 mRasterCommandBuffers[i]->BeginRenderPass(App::Instance().GetGraphicsContext()->GetDefaultRenderPass()->GetHandle(),
+																					   App::Instance().GetGraphicsContext()->GetDefaultFrameBuffers()[i]->GetHandle(),
+																					   renderArea,
+																					   {VkClearValue{0.0f, 0.0f, 0.0f, 1.0f}},
+																					   VK_SUBPASS_CONTENTS_INLINE);
+
+											 mRasterCommandBuffers[i]->SetViewport(mRasterPipeline->GetViewport(0));
+											 mRasterCommandBuffers[i]->BindPipeline(mRasterPipeline.get());
+											 mRasterCommandBuffers[i]->BindVertexBuffers(0, 1, {mPositionBuffer.get()});
+											 mRasterCommandBuffers[i]->Draw(PARTICLE_NUM, 1, 0, 0);
+											 mRasterCommandBuffers[i]->EndRenderPass();
+										 });
+	}
+
+	mComputeCommandBuffer->Record([&]()
+								  {
+									  mComputeCommandBuffer->BindPipeline(mComputePipelines[0].get());
+									  mComputeCommandBuffer->BindDescriptorSets(mComputePipelines[0]->GetLayout(), 0, {mComputeDescriptorSet});
+									  mComputeCommandBuffer->Dispatch(WORK_GROUP_NUM, 1, 1);
+									  mComputeCommandBuffer->PipelineBarrier(PipelineStage::COMPUTE_SHADER, PipelineStage::COMPUTE_SHADER, 0, 0, nullptr, 0, nullptr, 0, nullptr);
+
+									  mComputeCommandBuffer->BindPipeline(mComputePipelines[1].get());
+									  mComputeCommandBuffer->BindDescriptorSets(mComputePipelines[1]->GetLayout(), 0, {mComputeDescriptorSet});
+									  mComputeCommandBuffer->Dispatch(WORK_GROUP_NUM, 1, 1);
+									  mComputeCommandBuffer->PipelineBarrier(PipelineStage::COMPUTE_SHADER, PipelineStage::COMPUTE_SHADER, 0, 0, nullptr, 0, nullptr, 0, nullptr);
+
+									  mComputeCommandBuffer->BindPipeline(mComputePipelines[2].get());
+									  mComputeCommandBuffer->BindDescriptorSets(mComputePipelines[2]->GetLayout(), 0, {mComputeDescriptorSet});
+									  mComputeCommandBuffer->Dispatch(WORK_GROUP_NUM, 1, 1);
+									  mComputeCommandBuffer->PipelineBarrier(PipelineStage::COMPUTE_SHADER, PipelineStage::COMPUTE_SHADER, 0, 0, nullptr, 0, nullptr, 0, nullptr);
+								  });
+}
+
+void SphScene::Update()
+{
+	auto &inputSystem = App::Instance().GetInputSystem();
+	if (inputSystem.GetKeyboard().GetKeyState(SDL_SCANCODE_1) == ButtonState::PRESS)
+	{
+		std::array<Vector2f, PARTICLE_NUM> initParticlePosition;
+		for (auto i = 0, x = 0, y = 0; i < PARTICLE_NUM; ++i)
+		{
+			initParticlePosition[i].x = -0.625f + PARTICLE_RADIUS * 2 * x;
+			initParticlePosition[i].y = -1 + PARTICLE_RADIUS * 2 * y;
+			x++;
+			if (x >= 125)
+			{
+				x = 0;
+				y++;
+			}
+		}
+		InitParticleData(initParticlePosition);
+	}
+	if (inputSystem.GetKeyboard().GetKeyState(SDL_SCANCODE_2) == ButtonState::PRESS)
+	{
+		std::array<Vector2f, PARTICLE_NUM> initParticlePosition;
+		for (auto i = 0, x = 0, y = 0; i < PARTICLE_NUM; ++i)
+		{
+			initParticlePosition[i].x = -1 + PARTICLE_RADIUS * 2 * x;
+			initParticlePosition[i].y = 1 - PARTICLE_RADIUS * 2 * y;
+			x++;
+			if (x >= 100)
+			{
+				x = 0;
+				y++;
+			}
+		}
+		InitParticleData(initParticlePosition);
+	}
+	if (inputSystem.GetKeyboard().GetKeyState(SDL_SCANCODE_3) == ButtonState::PRESS)
+	{
+		std::array<Vector2f, PARTICLE_NUM> initParticlePosition;
+		for (auto i = 0, x = 0, y = 0; i < PARTICLE_NUM; ++i)
+		{
+			initParticlePosition[i].x = 1 - PARTICLE_RADIUS * 2 * x;
+			initParticlePosition[i].y = -1 + PARTICLE_RADIUS * 2 * y;
+			x++;
+			if (x >= 100)
+			{
+				x = 0;
+				y++;
+			}
+		}
+		InitParticleData(initParticlePosition);
+	}
+
+	Simulate();
+}
+void SphScene::Simulate()
+{
+	mComputeCommandBuffer->Submit();
+
+	App::Instance().GetGraphicsContext()->GetDevice()->GetComputeQueue()->WaitIdle();
+}
+
+void SphScene::Render()
+{
+	uint32_t swapChainImageIdx = App::Instance().GetGraphicsContext()->GetSwapChain()->AcquireNextImage(mImageAvailableSemaphores[currentFrame].get());
+
+	if (mImagesInFlight[swapChainImageIdx] != nullptr)
+		mImagesInFlight[swapChainImageIdx]->Wait(VK_TRUE, UINT64_MAX);
+	mImagesInFlight[swapChainImageIdx] = mInFlightFences[currentFrame].get();
+
+	mInFlightFences[currentFrame]->Reset();
+
+	mRasterCommandBuffers[swapChainImageIdx]->Submit({PipelineStage::COLOR_ATTACHMENT_OUTPUT}, {mImageAvailableSemaphores[currentFrame].get()}, {mRenderFinishedSemaphores[currentFrame].get()}, mInFlightFences[currentFrame].get());
+	mRasterCommandBuffers[swapChainImageIdx]->Present({App::Instance().GetGraphicsContext()->GetSwapChain()}, swapChainImageIdx, {mRenderFinishedSemaphores[currentFrame].get()});
+	App::Instance().GetGraphicsContext()->GetDevice()->GetPresentQueue()->WaitIdle();
+
+	currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+}
+
+void SphScene::InitParticleData(std::array<Vector2f, PARTICLE_NUM> initParticlePosition)
+{
+	auto stagingBuffer = App::Instance().GetGraphicsContext()->GetDevice()->CreateCPUBuffer(mPosSsboSize, BufferUsage::TRANSFER_SRC);
+	stagingBuffer->Fill(initParticlePosition.data());
+	mPositionBuffer->UploadDataFrom(stagingBuffer->GetSize(), *stagingBuffer);
+}
