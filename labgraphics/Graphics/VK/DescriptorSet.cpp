@@ -38,7 +38,7 @@ DescriptorSet &DescriptorSet::WriteBuffer(uint32_t binding, const Buffer *buffer
 
 DescriptorSet &DescriptorSet::WriteBuffer(uint32_t binding, const Buffer *buffer)
 {
-    return WriteBuffer(binding, buffer, 0, VK_WHOLE_SIZE);
+    return WriteBuffer(binding, buffer, 0, buffer->GetSize());
 }
 
 DescriptorSet &DescriptorSet::WriteImage(uint32_t binding, const ImageView2D *imgView, ImageLayout layout, Sampler *sampler)

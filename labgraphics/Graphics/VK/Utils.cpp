@@ -168,44 +168,6 @@ SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device, VkSurface
     return details;
 }
 
-VkSurfaceFormatKHR ChooseSwapChainSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats)
-{
-    for (const auto &availableFormat : availableFormats)
-    {
-        if (availableFormat.format == Format::B8G8R8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
-            return availableFormat;
-    }
-
-    return availableFormats[0];
-}
-
-VkPresentModeKHR ChooseSwapChainPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes)
-{
-    for (const auto &avaiablePresentMode : availablePresentModes)
-        if (avaiablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
-            return avaiablePresentMode;
-    return VK_PRESENT_MODE_FIFO_KHR;
-}
-
-VkExtent2D ChooseSwapChainExtent(SDL_Window *window, const VkSurfaceCapabilitiesKHR &capabilities)
-{
-    if (capabilities.currentExtent.width != UINT32_MAX)
-        return capabilities.currentExtent;
-    else
-    {
-        int width, height;
-        SDL_GetWindowSize(window, &width, &height);
-        VkExtent2D actualExtent = {
-            (uint32_t)width,
-            (uint32_t)height};
-
-        actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
-        actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
-
-        return actualExtent;
-    }
-}
-
 VkShaderModule CreateShaderModuleFromSpirvFile(VkDevice device, std::string_view filePath)
 {
     std::ifstream file(filePath.data(), std::ios::binary);

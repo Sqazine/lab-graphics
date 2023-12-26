@@ -90,7 +90,7 @@ Device::Device(const Instance &instance, uint64_t requiredFeature)
     VK_CHECK(vkCreateDevice(mPhysicalDevice, &deviceInfo, nullptr, &mHandle));
 
     mQueueFamilyIndices = FindQueueFamilies(mPhysicalDevice, mInstance.GetSurface());
-    
+
     GET_VK_DEVICE_PFN(mHandle, vkGetBufferDeviceAddressKHR);
     GET_VK_DEVICE_PFN(mHandle, vkSetDebugUtilsObjectNameEXT);
     GET_VK_DEVICE_PFN(mHandle, vkCreateAccelerationStructureKHR);
@@ -224,6 +224,11 @@ std::unique_ptr<Semaphore> Device::CreateSemaphore()
 std::unique_ptr<CpuImage2D> Device::CreateCpuImage2D(uint32_t width, uint32_t height, Format format, ImageTiling tiling)
 {
     return std::move(std::make_unique<CpuImage2D>(*this, width, height, format, tiling, ImageUsage::STORAGE | ImageUsage::TRANSFER_SRC));
+}
+
+std::unique_ptr<GpuImage2D> Device::CreateGpuImage2D(uint32_t width, uint32_t height, Format format, ImageTiling tiling)
+{
+    return std::move(std::make_unique<GpuImage2D>(*this, width, height, format, tiling, ImageUsage::TRANSFER_DST | ImageUsage::STORAGE));
 }
 
 std::unique_ptr<ImageView2D> Device::CreateImageView(VkImage image, Format format) const
@@ -383,4 +388,9 @@ const VkPhysicalDeviceMemoryProperties &Device::GetPhysicalMemoryProps() const
 const SwapChainSupportDetails &Device::GetSwapChainSupportDetails() const
 {
     return mSwapChainSupportDetails;
+}
+
+std::unique_ptr<DescriptorTable> Device::CreateDescriptorTable()
+{
+    return std::move(std::make_unique<DescriptorTable>(*this));
 }

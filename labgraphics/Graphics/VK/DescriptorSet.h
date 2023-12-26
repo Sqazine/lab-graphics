@@ -6,6 +6,7 @@
 #include "ImageView.h"
 #include "Image.h"
 #include "AS.h"
+#include "Sampler.h"
 
 struct DescriptorImageInfo
 {

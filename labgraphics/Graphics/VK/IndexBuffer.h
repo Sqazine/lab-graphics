@@ -21,10 +21,7 @@ inline IndexBuffer<T>::IndexBuffer(const std::vector<T> &indices)
     mDataType = DataStr2VkIndexType(typeid(T).name());
 
     uint64_t bufferSize = sizeof(T) * indices.size();
-    VKBuffer stagingBuffer = VKBuffer(bufferSize,
-                                      VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
+    CpuBuffer stagingBuffer = CpuBuffer(bufferSize, BufferUsage::TRANSFER_SRC);
     stagingBuffer.Fill(bufferSize, indices.data());
 
     UploadDataFrom(bufferSize, stagingBuffer);

@@ -20,7 +20,7 @@ class Image;
 class RaymanScene:public Scene
 {
 public:
-	RaymanScene();
+	RaymanScene(std::string_view filePath);
 	~RaymanScene();
 
 	void LoadFromFile(std::string_view filePath);

@@ -62,6 +62,8 @@ void SceneRayTraceTriangle::Render()
 	VkImage swapChainImage = App::Instance().GetGraphicsContext()->GetSwapChain()->GetImage(imageIndex);
 	auto commandBuffer = mCommandBuffers[imageIndex].get();
 
+	commandBuffer->Reset();
+
 	VkImageSubresourceRange subResourceRange{};
 	subResourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	subResourceRange.baseMipLevel = 0;

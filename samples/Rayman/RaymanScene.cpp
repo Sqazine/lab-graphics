@@ -70,8 +70,9 @@ static Matrix4f GetEntityNodeSRTMat(const rapidjson::Value &entity)
     return xform;
 }
 
-RaymanScene::RaymanScene()
+RaymanScene::RaymanScene(std::string_view filePath)
 {
+    LoadFromFile(filePath);
 }
 
 void RaymanScene::AddHDR(HDRData *hdr)
@@ -400,7 +401,7 @@ void RaymanScene::LoadFromFile(std::string_view filePath)
 
 void RaymanScene::SetCamera(Vector3f position, Vector3f target, float fov, float aspect)
 {
-    camera.reset(new RmCamera(position, target,fov,aspect));
+    camera.reset(new RmCamera(position, target, fov, aspect));
 }
 
 int RaymanScene::AddMeshInstance(MeshInstance meshInstance)
@@ -437,7 +438,7 @@ int RaymanScene::AddLight(Light light)
 
 void RaymanScene::Init()
 {
-    App::Instance().GetWindow()->Resize(1600, 900);
+    // App::Instance().GetWindow()->Resize(1600, 900);
 
     mRtxRayTraceScene = std::make_unique<RtxRayTraceScene>(this);
 }

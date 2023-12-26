@@ -1,8 +1,8 @@
 #include "labgraphics.h"
-#include "Sph/SphScene.h"
-#include "MandelbrotSetGenerate/SceneMandelbrotSetGen.h"
+#include "SphScene.h"
+#include "SceneMandelbrotSetGen.h"
 #include "Rayman/RaymanScene.h"
-#include "RayTracingTriangle/SceneRayTraceTriangle.h"
+#include "SceneRayTraceTriangle.h"
 
 class SceneManager : public Scene
 {
@@ -10,12 +10,9 @@ public:
     SceneManager()
     {
         mScenes.emplace_back(std::make_unique<SphScene>());
-        // mScenes.emplace_back(std::make_unique<SceneMandelbrotSetGen>());
+        mScenes.emplace_back(std::make_unique<SceneMandelbrotSetGen>());
 
-        // auto s = std::make_unique<RaymanScene>();
-        // ((RaymanScene *)s.get())->LoadFromFile(std::string(ASSETS_DIR) + "rayman/scene.json");
-
-        // mScenes.emplace_back(std::move(s));
+        mScenes.emplace_back(std::make_unique<RaymanScene>(std::string(ASSETS_DIR) + "rayman/scene.json"));
 
         mScenes.emplace_back(std::make_unique<SceneRayTraceTriangle>());
     }

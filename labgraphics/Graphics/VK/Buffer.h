@@ -24,6 +24,7 @@ public:
     const VkBuffer &GetHandle() const;
     const VkDeviceMemory &GetMemory() const;
     uint64_t GetSize() const;
+    uint64_t GetAlignedMemorySize() const;
     uint64_t GetAddress() const;
 
     VkDeviceOrHostAddressConstKHR GetVkAddress() const;
@@ -43,6 +44,7 @@ private:
     VkBuffer mHandle;
     VkDeviceMemory mMemory;
     uint64_t mSize;
+    uint64_t mAlignedMemorySize;
     uint64_t mAddress;
 };
 

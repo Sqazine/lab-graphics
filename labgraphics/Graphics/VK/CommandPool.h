@@ -79,54 +79,15 @@ inline std::vector<std::unique_ptr<T>> CommandPool<T>::CreateSecondaryCommandBuf
     return result;
 }
 
-class RasterCommandPool : public CommandPool<RasterCommandBuffer>
-{
-public:
-    RasterCommandPool(Device &device)
-        : CommandPool<RasterCommandBuffer>(device, device.GetQueueFamilyIndices().graphicsFamily.value())
-    {
-    }
+#define COMMAND_POOL_DECL(name, queueIdx)                                                         \
+    class name##CommandPool : public CommandPool<name##CommandBuffer>                             \
+    {                                                                                             \
+    public:                                                                                       \
+        name##CommandPool(Device &device) : CommandPool<name##CommandBuffer>(device, queueIdx) {} \
+        ~name##CommandPool() {}                                                                   \
+    };
 
-    ~RasterCommandPool()
-    {
-    }
-};
-
-class ComputeCommandPool : public CommandPool<ComputeCommandBuffer>
-{
-public:
-    ComputeCommandPool(Device &device)
-        : CommandPool<ComputeCommandBuffer>(device, device.GetQueueFamilyIndices().computeFamily.value())
-    {
-    }
-
-    ~ComputeCommandPool()
-    {
-    }
-};
-
-class RayTraceCommandPool : public CommandPool<RayTraceCommandBuffer>
-{
-public:
-    RayTraceCommandPool(class Device &device)
-        : CommandPool<RayTraceCommandBuffer>(device, device.GetQueueFamilyIndices().graphicsFamily.value())
-    {
-    }
-
-    ~RayTraceCommandPool()
-    {
-    }
-};
-
-class TransferCommandPool : public CommandPool<TransferCommandBuffer>
-{
-public:
-    TransferCommandPool(class Device &device)
-        : CommandPool<TransferCommandBuffer>(device, device.GetQueueFamilyIndices().transferFamily.value())
-    {
-    }
-
-    ~TransferCommandPool()
-    {
-    }
-};
+COMMAND_POOL_DECL(Raster, device.GetQueueFamilyIndices().graphicsFamily.value())
+COMMAND_POOL_DECL(Compute, device.GetQueueFamilyIndices().computeFamily.value())
+COMMAND_POOL_DECL(RayTrace, device.GetQueueFamilyIndices().graphicsFamily.value())
+COMMAND_POOL_DECL(Transfer, device.GetQueueFamilyIndices().transferFamily.value())

@@ -2,6 +2,7 @@
 #include "Device.h"
 #include "Utils.h"
 #include "CommandPool.h"
+#include "Base/App.h"
 #include <iostream>
 Image2D::Image2D(Device &device, uint32_t width, uint32_t height, Format format, ImageTiling tiling, ImageUsage usage)
     : mDevice(device), mFormat(format), mWidth(width), mHeight(height), mAspect(ImageAspect::COLOR)
@@ -58,10 +59,17 @@ Image2D::Image2D(Device &device, uint32_t width, uint32_t height, Format format,
     mImageInfo.tiling = IMAGE_TILING_CAST(tiling);
     mImageInfo.initialLayout = IMAGE_LAYOUT_CAST(ImageLayout::UNDEFINED);
 
+    if (mDevice.GetQueueFamilyIndices().IsSameFamily())
+    {
+        mImageInfo.queueFamilyIndexCount = 1;
+        mImageInfo.pQueueFamilyIndices = &mDevice.GetQueueFamilyIndices().graphicsFamily.value();
+        mImageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    }
+
     VK_CHECK(vkCreateImage(mDevice.GetHandle(), &mImageInfo, nullptr, &mHandle));
 
     VkMemoryRequirements memoryRequirements{};
-    vkGetImageMemoryRequirements(device.GetHandle(), mHandle, &memoryRequirements);
+    vkGetImageMemoryRequirements(mDevice.GetHandle(), mHandle, &memoryRequirements);
 
     VkMemoryAllocateInfo memoryAllocateInfo{};
     memoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;

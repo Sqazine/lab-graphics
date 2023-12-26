@@ -10,6 +10,7 @@
 #include "Image.h"
 #include "Utils.h"
 #include "UniformBuffer.h"
+#include "DescriptorTable.h"
 
 const std::vector<const char *> deviceExtensions = {
 	VK_KHR_SWAPCHAIN_EXTENSION_NAME,
@@ -62,6 +63,7 @@ public:
 	std::unique_ptr<Semaphore> CreateSemaphore();
 
 	std::unique_ptr<CpuImage2D> CreateCpuImage2D(uint32_t width, uint32_t height, Format format, ImageTiling tiling);
+	std::unique_ptr<GpuImage2D> CreateGpuImage2D(uint32_t width, uint32_t height, Format format, ImageTiling tiling);
 
 	class RasterCommandPool *GetRasterCommandPool();
 	class ComputeCommandPool *GetComputeCommandPool();
@@ -95,6 +97,8 @@ public:
 	const VkPhysicalDeviceMemoryProperties &GetPhysicalMemoryProps() const;
 
 	const SwapChainSupportDetails &GetSwapChainSupportDetails() const;
+
+	std::unique_ptr<DescriptorTable> CreateDescriptorTable();
 
 	PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectNameEXT = nullptr;
 	PFN_vkGetBufferDeviceAddressKHR vkGetBufferDeviceAddressKHR = nullptr;

@@ -1,5 +1,8 @@
 #include "DescriptorTable.h"
 #include "Device.h"
+#include "DescriptorPool.h"
+#include "DescriptorSet.h"
+#include "DescriptorSetLayout.h"
 
 DescriptorTable::DescriptorTable(const Device &device)
     : mDescriptorPool(std::make_unique<DescriptorPool>(device)), mDescriptorLayout(std::make_unique<DescriptorSetLayout>(device))
@@ -18,16 +21,16 @@ DescriptorTable &DescriptorTable::AddLayoutBinding(const DescriptorBinding &bind
 
 DescriptorTable &DescriptorTable::AddLayoutBinding(uint32_t binding, uint32_t count, DescriptorType type, ShaderStage shaderStage, Sampler *pImmutableSamplers)
 {
-    mDescriptorLayout->AddLayoutBinding(binding,count, type, shaderStage, pImmutableSamplers);
+    mDescriptorLayout->AddLayoutBinding(binding, count, type, shaderStage, pImmutableSamplers);
     return *this;
 }
 
-DescriptorSet* DescriptorTable::AllocateDescriptorSet()
+DescriptorSet *DescriptorTable::AllocateDescriptorSet()
 {
     return mDescriptorPool->AllocateDescriptorSet(mDescriptorLayout.get());
 }
 
-std::vector<DescriptorSet*> DescriptorTable::AllocateDescriptorSets(uint32_t count)
+std::vector<DescriptorSet *> DescriptorTable::AllocateDescriptorSets(uint32_t count)
 {
     return mDescriptorPool->AllocateDescriptorSets(mDescriptorLayout.get(), count);
 }

@@ -17,13 +17,13 @@ Buffer::Buffer(Device &device,
                uint64_t size,
                BufferUsage usage,
                VkMemoryPropertyFlags properties)
-    : mDevice(device)
+    : mDevice(device), mSize(size)
 {
     VkBufferCreateInfo bufferInfo{};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bufferInfo.pNext = nullptr;
     bufferInfo.flags = 0;
-    bufferInfo.size = size;
+    bufferInfo.size = mSize;
 
     if (mDevice.GetRequiredFeature() & DeviceFeature::BUFFER_ADDRESS)
         bufferInfo.usage = BUFFER_USAGE_CAST(usage | BufferUsage::SHADER_DEVICE_ADDRESS);
@@ -37,7 +37,7 @@ Buffer::Buffer(Device &device,
     VkMemoryRequirements memRequirements;
     memRequirements = GetMemoryRequirements();
 
-    mSize = memRequirements.size;
+    mAlignedMemorySize = memRequirements.size;
 
     VkMemoryAllocateFlagsInfo flagsInfo{};
     flagsInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO;
@@ -101,6 +101,11 @@ uint64_t Buffer::GetSize() const
     return mSize;
 }
 
+uint64_t Buffer::GetAlignedMemorySize() const
+{
+    return mAlignedMemorySize;
+}
+
 uint64_t Buffer::GetAddress() const
 {
     if ((mDevice.GetRequiredFeature() & DeviceFeature::BUFFER_ADDRESS) != DeviceFeature::BUFFER_ADDRESS)
@@ -153,10 +158,11 @@ void GpuBuffer::UploadDataFrom(uint64_t bufferSize, const CpuBuffer &stagingBuff
     auto cmd = mDevice.GetTransferCommandPool()->CreatePrimaryCommandBuffer();
     cmd->ExecuteImmediately([&]()
                             {
-        VkBufferCopy copyRegion{};
-        copyRegion.srcOffset = 0;
-        copyRegion.dstOffset = 0;
-        copyRegion.size = bufferSize;
+                                VkBufferCopy copyRegion{};
+                                copyRegion.srcOffset = 0;
+                                copyRegion.dstOffset = 0;
+                                copyRegion.size = bufferSize;
 
-        cmd->CopyBuffer(*this,stagingBuffer,copyRegion); });
+                                cmd->CopyBuffer(*this, stagingBuffer, copyRegion);
+                            });
 }

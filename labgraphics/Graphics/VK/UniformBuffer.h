@@ -11,7 +11,7 @@ public:
 };
 
 template <typename T>
-inline UniformBuffer<T>::UniformBuffer(class Device &device)
+inline UniformBuffer<T>::UniformBuffer(Device &device)
     : CpuBuffer(device,sizeof(T),BufferUsage::UNIFORM)
 {
 }

@@ -142,10 +142,6 @@ VkPhysicalDeviceFeatures GetPhysicalDeviceFeatures(VkPhysicalDevice device);
 QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface);
 SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface);
 
-VkSurfaceFormatKHR ChooseSwapChainSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats);
-VkPresentModeKHR ChooseSwapChainPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes);
-VkExtent2D ChooseSwapChainExtent(SDL_Window *window, const VkSurfaceCapabilitiesKHR &capabilities);
-
 VkShaderModule CreateShaderModuleFromSpirvFile(VkDevice device, std::string_view filePath);
 
 Format FindSupportedFormat(VkPhysicalDevice phyDevice, const std::vector<Format> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
