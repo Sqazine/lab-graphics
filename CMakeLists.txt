@@ -85,12 +85,12 @@ if(WIN32)
     set_property(TARGET SPIRV  PROPERTY FOLDER 3rd/glslang)
     set_property(TARGET HLSL  PROPERTY FOLDER 3rd/glslang)
     set_property(TARGET spirv-reflect  PROPERTY FOLDER 3rd/glslang)
-    set_property(TARGET tinyobjloader  PROPERTY FOLDER 3rd/glslang)
     set_property(TARGET install-headers  PROPERTY FOLDER 3rd/glslang)
     set_property(TARGET assimp  PROPERTY FOLDER 3rd/assimp)
     set_property(TARGET UpdateAssimpLibsDebugSymbolsAndDLLs  PROPERTY FOLDER 3rd/assimp)
     set_property(TARGET zlibstatic  PROPERTY FOLDER 3rd/assimp)
     set_property(TARGET imgui  PROPERTY FOLDER 3rd)
+    set_property(TARGET tinyobjloader  PROPERTY FOLDER 3rd)
 endif()
 
 
