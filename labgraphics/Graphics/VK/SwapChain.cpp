@@ -14,7 +14,7 @@ SwapChain::SwapChain(const Device &device)
     VkSwapchainCreateInfoKHR swapChainInfo{};
     swapChainInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     swapChainInfo.surface = mDevice.GetInstance().GetSurface();
-    swapChainInfo.minImageCount = mDevice.GetSwapChainSupportDetails().surfaceCapabilities.minImageCount;
+    swapChainInfo.minImageCount = mDevice.GetSwapChainSupportDetails().surfaceCapabilities.minImageCount + 1;
     swapChainInfo.imageFormat = surfaceFormat.format;
     swapChainInfo.imageColorSpace = surfaceFormat.colorSpace;
     swapChainInfo.imageExtent = mExtent;

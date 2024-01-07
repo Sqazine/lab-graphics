@@ -15,12 +15,14 @@ DescriptorTable::~DescriptorTable()
 
 DescriptorTable &DescriptorTable::AddLayoutBinding(const DescriptorBinding &binding)
 {
+    mDescriptorPool->AddPoolDesc(binding.type, binding.count);
     mDescriptorLayout->AddLayoutBinding(binding);
     return *this;
 }
 
 DescriptorTable &DescriptorTable::AddLayoutBinding(uint32_t binding, uint32_t count, DescriptorType type, ShaderStage shaderStage, Sampler *pImmutableSamplers)
 {
+    mDescriptorPool->AddPoolDesc(type, count);
     mDescriptorLayout->AddLayoutBinding(binding, count, type, shaderStage, pImmutableSamplers);
     return *this;
 }

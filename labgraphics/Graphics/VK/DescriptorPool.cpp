@@ -29,15 +29,15 @@ const VkDescriptorPool &DescriptorPool::GetHandle()
     return mHandle;
 }
 
-DescriptorSet* DescriptorPool::AllocateDescriptorSet(DescriptorSetLayout *descLayout)
+DescriptorSet *DescriptorPool::AllocateDescriptorSet(DescriptorSetLayout *descLayout)
 {
     mDescriptorSetCache.emplace_back(std::move(std::make_unique<DescriptorSet>(mDevice, this, descLayout)));
     return mDescriptorSetCache.back().get();
 }
 
-std::vector<DescriptorSet*> DescriptorPool::AllocateDescriptorSets(DescriptorSetLayout *descLayout, uint32_t count)
+std::vector<DescriptorSet *> DescriptorPool::AllocateDescriptorSets(DescriptorSetLayout *descLayout, uint32_t count)
 {
-    std::vector<DescriptorSet*> result(count);
+    std::vector<DescriptorSet *> result(count);
     for (int32_t i = 0; i < count; ++i)
         result[i] = AllocateDescriptorSet(descLayout);
     return result;
@@ -49,8 +49,8 @@ void DescriptorPool::Build()
     for (const auto &poolDesc : mPoolDescs)
     {
         VkDescriptorPoolSize poolSize{};
-        poolSize.type=DESCRIPTOR_TYPE_CAST(poolDesc.first);
-        poolSize.descriptorCount=poolDesc.second;
+        poolSize.type = DESCRIPTOR_TYPE_CAST(poolDesc.first);
+        poolSize.descriptorCount = poolDesc.second;
         poolSizes.emplace_back(poolSize);
     }
 
@@ -58,7 +58,7 @@ void DescriptorPool::Build()
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     poolInfo.pNext = nullptr;
     poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-    poolInfo.maxSets = 256;
+    poolInfo.maxSets = 256 * poolSizes.size();
     poolInfo.poolSizeCount = poolSizes.size();
     poolInfo.pPoolSizes = poolSizes.data();
 
