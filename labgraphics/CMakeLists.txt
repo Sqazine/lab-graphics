@@ -38,6 +38,8 @@ target_include_directories(labgraphics PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
                                             ${SPDLOG_INC_DIR}
                                             ${CGLTF_INC_DIR}
                                             ${STB_INC_DIR}
+                                            ${IMGUI_INC_DIR}
+                                            ${GLAD_INC_DIR}
 )
 
 find_library(vulkan_1
@@ -61,7 +63,9 @@ target_link_libraries(labgraphics PRIVATE SDL2-static
                                          HLSL 
                                          ${vulkan_1}
                                          spirv-reflect
-                                         tinyobjloader)
+                                         tinyobjloader
+                                         imgui
+)
 
 if(MSVC)
     target_compile_definitions(labgraphics PRIVATE _CRT_SECURE_NO_WARNINGS)

@@ -36,6 +36,7 @@ private:
     void ProcessInput();
     void Update();
     void Render();
+    void RenderUI();
     void CleanUp();
 
     std::unique_ptr<Window> mWindow;

@@ -1,5 +1,7 @@
 #include "ImguiScene.h"
 
+#define MAX_FRAMES_IN_FLIGHT 2
+
 static void check_vk_result(VkResult err)
 {
     if (err == 0)
@@ -8,7 +10,6 @@ static void check_vk_result(VkResult err)
     if (err < 0)
         abort();
 }
-
 
 void SceneImgui::Init()
 {
@@ -25,21 +26,30 @@ void SceneImgui::Init()
     mDescriptorTable->GetPool()->AddPoolDesc(DescriptorType::STORAGE_BUFFER_DYNAMIC, 1000);
     mDescriptorTable->GetPool()->AddPoolDesc(DescriptorType::INPUT_ATTACHMENT, 1000);
 
-    // Setup backend capabilities flags
-    ImGuiIO &io = ImGui::GetIO();
-    io.BackendRendererName = "imgui_impl_vulkan";
-    io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset; // We can honor the ImDrawCmd::VtxOffset field, allowing for large meshes.
+    mRasterCommandBuffers = App::Instance().GetGraphicsContext()->GetDevice()->GetRasterCommandPool()->CreatePrimaryCommandBuffers(App::Instance().GetGraphicsContext()->GetDefaultFrameBuffers().size());
 
-     // Setup Dear ImGui context
+    mImageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+    mRenderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+    mInFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+    mImagesInFlight.resize(App::Instance().GetGraphicsContext()->GetSwapChain()->GetImages().size(), nullptr);
+
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+    {
+        mImageAvailableSemaphores[i] = App::Instance().GetGraphicsContext()->GetDevice()->CreateSemaphore();
+        mRenderFinishedSemaphores[i] = App::Instance().GetGraphicsContext()->GetDevice()->CreateSemaphore();
+        mInFlightFences[i] = App::Instance().GetGraphicsContext()->GetDevice()->CreateFence(FenceStatus::SIGNALED);
+    }
+
+    // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
-    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-    //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+    ImGuiIO &io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;  // Enable Gamepad Controls
 
     // Setup Dear ImGui style
     ImGui::StyleColorsDark();
-    //ImGui::StyleColorsClassic();
+    // ImGui::StyleColorsClassic();
 
     // Setup Platform/Renderer backends
     ImGui_ImplSDL2_InitForVulkan(App::Instance().GetWindow()->GetHandle());
@@ -53,9 +63,37 @@ void SceneImgui::Init()
     init_info.DescriptorPool = mDescriptorTable->GetPool()->GetHandle();
     init_info.Allocator = nullptr;
     init_info.MinImageCount = App::Instance().GetGraphicsContext()->GetSwapChain()->GetImageCount();
-    init_info.ImageCount = mMainWindowData.ImageCount;
+    init_info.ImageCount = App::Instance().GetGraphicsContext()->GetSwapChain()->GetImageCount();
     init_info.CheckVkResultFn = check_vk_result;
-    ImGui_ImplVulkan_Init(&init_info, mMainWindowData.RenderPass);
+    ImGui_ImplVulkan_Init(&init_info, App::Instance().GetGraphicsContext()->GetDefaultRenderPass()->GetHandle());
+
+    // Load Fonts
+    // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
+    // - AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the font among multiple.
+    // - If the file cannot be loaded, the function will return NULL. Please handle those errors in your application (e.g. use an assertion, or display an error and quit).
+    // - The fonts will be rasterized at a given size (w/ oversampling) and stored into a texture when calling ImFontAtlas::Build()/GetTexDataAsXXXX(), which ImGui_ImplXXXX_NewFrame below will call.
+    // - Read 'docs/FONTS.md' for more instructions and details.
+    // - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
+    //io.Fonts->AddFontDefault();
+    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
+    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
+    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
+    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/ProggyTiny.ttf", 10.0f);
+    //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
+    //IM_ASSERT(font != NULL);
+
+    // Upload Fonts
+    {
+        auto cmdBuffer = App::Instance().GetGraphicsContext()->GetDevice()->GetRasterCommandPool()->CreatePrimaryCommandBuffer();
+
+        cmdBuffer->Record([&]()
+                          { ImGui_ImplVulkan_CreateFontsTexture(cmdBuffer->GetHandle()); });
+
+        cmdBuffer->Submit();
+
+        App::Instance().GetGraphicsContext()->GetDevice()->WaitIdle();
+        ImGui_ImplVulkan_DestroyFontUploadObjects();
+    }
 }
 void SceneImgui::ProcessInput()
 {
@@ -69,9 +107,8 @@ void SceneImgui::Render()
 }
 void SceneImgui::RenderUI()
 {
-    // Start the Dear ImGui frame
-    ImGui_ImplVulkan_NewFrame();
     ImGui_ImplSDL2_NewFrame(App::Instance().GetWindow()->GetHandle());
+    ImGui_ImplVulkan_NewFrame();
     ImGui::NewFrame();
 
     // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
@@ -85,12 +122,12 @@ void SceneImgui::RenderUI()
 
         ImGui::Begin("Hello, world!"); // Create a window called "Hello, world!" and append into it.
 
-        ImGui::Text("This is some useful text.");          // Display some text (you can use a format strings too)
+        ImGui::Text("This is some useful text.");         // Display some text (you can use a format strings too)
         ImGui::Checkbox("Demo Window", &mShowDemoWindow); // Edit bools storing our window open/close state
         ImGui::Checkbox("Another Window", &mShowAnotherWindow);
 
         ImGui::SliderFloat("float", &f, 0.0f, 1.0f);             // Edit 1 float using a slider from 0.0f to 1.0f
-        ImGui::ColorEdit3("clear color", (float *)&clear_color); // Edit 3 floats representing a color
+        ImGui::ColorEdit3("clear color", (float *)&mClearColor); // Edit 3 floats representing a color
 
         if (ImGui::Button("Button")) // Buttons return true when clicked (most widgets return true when edited/activated)
             counter++;
@@ -117,14 +154,40 @@ void SceneImgui::RenderUI()
     const bool is_minimized = (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f);
     if (!is_minimized)
     {
-        wd->ClearValue.color.float32[0] = clear_color.x * clear_color.w;
-        wd->ClearValue.color.float32[1] = clear_color.y * clear_color.w;
-        wd->ClearValue.color.float32[2] = clear_color.z * clear_color.w;
-        wd->ClearValue.color.float32[3] = clear_color.w;
-        FrameRender(wd, draw_data);
-        FramePresent(wd);
+        uint32_t swapChainImageIdx = App::Instance().GetGraphicsContext()->GetSwapChain()->AcquireNextImage(mImageAvailableSemaphores[currentFrame].get());
+
+        if (mImagesInFlight[swapChainImageIdx] != nullptr)
+            mImagesInFlight[swapChainImageIdx]->Wait(VK_TRUE, UINT64_MAX);
+        mImagesInFlight[swapChainImageIdx] = mInFlightFences[currentFrame].get();
+
+        mInFlightFences[currentFrame]->Reset();
+
+        mRasterCommandBuffers[swapChainImageIdx]->Record([&]()
+                                                         {
+                                                             VkRect2D renderArea{};
+                                                             renderArea.extent = App::Instance().GetGraphicsContext()->GetSwapChain()->GetVkExtent();
+                                                             renderArea.offset = {0, 0};
+                                                             mRasterCommandBuffers[swapChainImageIdx]->BeginRenderPass(App::Instance().GetGraphicsContext()->GetDefaultRenderPass()->GetHandle(),
+                                                                                                                       App::Instance().GetGraphicsContext()->GetDefaultFrameBuffers()[swapChainImageIdx]->GetHandle(),
+                                                                                                                       renderArea,
+                                                                                                                       {VkClearValue{mClearColor.x, mClearColor.y, mClearColor.z, mClearColor.w}},
+                                                                                                                       VK_SUBPASS_CONTENTS_INLINE);
+                                                             // Record dear imgui primitives into command buffer
+                                                             ImGui_ImplVulkan_RenderDrawData(draw_data, mRasterCommandBuffers[swapChainImageIdx]->GetHandle());
+                                                             mRasterCommandBuffers[swapChainImageIdx]->EndRenderPass();
+                                                         });
+
+        mRasterCommandBuffers[swapChainImageIdx]->Submit({PipelineStage::COLOR_ATTACHMENT_OUTPUT}, {mImageAvailableSemaphores[currentFrame].get()}, {mRenderFinishedSemaphores[currentFrame].get()}, mInFlightFences[currentFrame].get());
+        mRasterCommandBuffers[swapChainImageIdx]->Present({App::Instance().GetGraphicsContext()->GetSwapChain()}, swapChainImageIdx, {mRenderFinishedSemaphores[currentFrame].get()});
+        App::Instance().GetGraphicsContext()->GetDevice()->GetPresentQueue()->WaitIdle();
+
+        currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
     }
 }
 void SceneImgui::CleanUp()
 {
+    App::Instance().GetGraphicsContext()->GetDevice()->WaitIdle();
+    ImGui_ImplVulkan_Shutdown();
+    ImGui_ImplSDL2_Shutdown();
+    ImGui::DestroyContext();
 }

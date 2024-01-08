@@ -1,9 +1,9 @@
 #pragma once
 #include <memory>
 #include "labgraphics.h"
-#include <imgui/imgui.h>
-#include <imgui/backends/imgui_impl_vulkan.h>
-#include <imgui/backends/imgui_impl_sdl.h>
+#include "imgui/imgui.h"
+#include "imgui/backends/imgui_impl_vulkan.h"
+#include "imgui/backends/imgui_impl_sdl.h"
 class SceneImgui : public Scene
 {
 public:
@@ -15,13 +15,19 @@ public:
     void CleanUp() override;
 
 private:
-    ImGui_ImplVulkanH_Window mMainWindowData;
-    
+    // ImGui_ImplVulkanH_Window mMainWindowData;
+
     bool mShowDemoWindow = true;
     bool mShowAnotherWindow = false;
-    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-
-    
+    ImVec4 mClearColor = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
     std::unique_ptr<DescriptorTable> mDescriptorTable;
+
+    std::vector<std::unique_ptr<RasterCommandBuffer>> mRasterCommandBuffers;
+
+    std::vector<std::unique_ptr<Semaphore>> mImageAvailableSemaphores;
+    std::vector<std::unique_ptr<Semaphore>> mRenderFinishedSemaphores;
+    std::vector<std::unique_ptr<Fence>> mInFlightFences;
+    std::vector<Fence *> mImagesInFlight;
+    size_t currentFrame = 0;
 };

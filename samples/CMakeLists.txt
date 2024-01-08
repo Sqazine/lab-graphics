@@ -1,7 +1,3 @@
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${DEST_BINARY_DIR}/sample)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${DEST_BINARY_DIR}/sample)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${DEST_BINARY_DIR}/sample)
-
 file(GLOB SRC "*.h" "*.cpp")
 file(GLOB SPH_SRC "Sph/*.h" "Sph/*.cpp")
 file(GLOB MANDELBROT_SET_GENERATE_SRC "MandelbrotSetGenerate/*.h" "MandelbrotSetGenerate/*.cpp")

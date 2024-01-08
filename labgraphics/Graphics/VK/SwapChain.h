@@ -12,8 +12,11 @@ public:
     ~SwapChain();
 
     const VkSwapchainKHR &GetHandle() const;
-    const Format &GetFormat() const;
+    Format GetFormat() const;
+    const VkSurfaceFormatKHR& GetSurfaceFormat() const;
+
     const VkPresentModeKHR &GetPresentMode() const;
+    
     Vector2u32 GetExtent() const;
     const VkExtent2D& GetVkExtent() const;
 
@@ -30,7 +33,7 @@ private:
     VkPresentModeKHR SelectPresentMode();
     VkExtent2D SelectExtent();
 
-    Format mFormat;
+    VkSurfaceFormatKHR mSurfaceFormat;
 
     const class Device &mDevice;
     VkSwapchainKHR mHandle;

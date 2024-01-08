@@ -3,18 +3,19 @@
 #include "SceneMandelbrotSetGen.h"
 #include "Rayman/RaymanScene.h"
 #include "SceneRayTraceTriangle.h"
-
+#include "ImguiScene.h"
 class SceneManager : public Scene
 {
 public:
     SceneManager()
     {
-        mScenes.emplace_back(std::make_unique<SphScene>());
-        mScenes.emplace_back(std::make_unique<SceneMandelbrotSetGen>());
+        // mScenes.emplace_back(std::make_unique<SphScene>());
+        // mScenes.emplace_back(std::make_unique<SceneMandelbrotSetGen>());
 
-        mScenes.emplace_back(std::make_unique<RaymanScene>(std::string(ASSETS_DIR) + "rayman/scene.json"));
+        // mScenes.emplace_back(std::make_unique<RaymanScene>(std::string(ASSETS_DIR) + "rayman/scene.json"));
 
-        mScenes.emplace_back(std::make_unique<SceneRayTraceTriangle>());
+        // mScenes.emplace_back(std::make_unique<SceneRayTraceTriangle>());
+        mScenes.emplace_back(std::make_unique<SceneImgui>());
     }
     ~SceneManager() override {}
 
@@ -45,7 +46,7 @@ public:
     }
 
 private:
-    uint32_t mSceneIdx = 1;
+    uint32_t mSceneIdx = 0;
 
     std::vector<std::unique_ptr<Scene>> mScenes;
 };

@@ -3,10 +3,9 @@
 #include "VK/Utils.h"
 #include <iostream>
 SwapChain::SwapChain(const Device &device)
-    : mDevice(device), mHandle(VK_NULL_HANDLE), mFormat(Format::UNDEFINED)
+    : mDevice(device), mHandle(VK_NULL_HANDLE)
 {
-    auto surfaceFormat = SelectSurfaceFormat();
-    mFormat = surfaceFormat.format;
+    mSurfaceFormat = SelectSurfaceFormat();
 
     mSurfacePresentMode = SelectPresentMode();
     mExtent = SelectExtent();
@@ -15,8 +14,8 @@ SwapChain::SwapChain(const Device &device)
     swapChainInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     swapChainInfo.surface = mDevice.GetInstance().GetSurface();
     swapChainInfo.minImageCount = mDevice.GetSwapChainSupportDetails().surfaceCapabilities.minImageCount + 1;
-    swapChainInfo.imageFormat = surfaceFormat.format;
-    swapChainInfo.imageColorSpace = surfaceFormat.colorSpace;
+    swapChainInfo.imageFormat = mSurfaceFormat.format;
+    swapChainInfo.imageColorSpace = mSurfaceFormat.colorSpace;
     swapChainInfo.imageExtent = mExtent;
     swapChainInfo.imageArrayLayers = 1;
     swapChainInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
@@ -39,7 +38,7 @@ SwapChain::SwapChain(const Device &device)
 
     mSwapChainImageViews.resize(swapChainImageCount);
     for (uint32_t i = 0; i < swapChainImageCount; ++i)
-        mSwapChainImageViews[i] = mDevice.CreateImageView(mSwapChainImages[i], mFormat);
+        mSwapChainImageViews[i] = mDevice.CreateImageView(mSwapChainImages[i], mSurfaceFormat.format);
 }
 SwapChain::~SwapChain()
 {
@@ -50,9 +49,15 @@ const VkSwapchainKHR &SwapChain::GetHandle() const
 {
     return mHandle;
 }
-const Format &SwapChain::GetFormat() const
+
+Format SwapChain::GetFormat() const
 {
-    return mFormat;
+    return mSurfaceFormat.format;
+}
+
+const VkSurfaceFormatKHR &SwapChain::GetSurfaceFormat() const
+{
+    return mSurfaceFormat;
 }
 
 const VkPresentModeKHR &SwapChain::GetPresentMode() const

@@ -8,6 +8,7 @@ void App::Run()
 		ProcessInput();
 		Update();
 		Render();
+		RenderUI();
 	}
 	CleanUp();
 }
@@ -82,6 +83,12 @@ void App::Render()
 {
 	for (const auto &scene : mScenes)
 		scene->Render();
+}
+
+void App::RenderUI()
+{
+	for (const auto &scene : mScenes)
+		scene->RenderUI();
 }
 
 void App::CleanUp()
