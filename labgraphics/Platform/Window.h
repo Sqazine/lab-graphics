@@ -29,7 +29,7 @@
 
 class Window
 {
-#define CREATE_WINDOW(x, y) mHandle = SDL_CreateWindow(mTitle.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, x, y, SDL_WINDOW_VULKAN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_HIDDEN)
+#define CREATE_WINDOW(x, y) mHandle = SDL_CreateWindow(mTitle.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, x, y, SDL_WINDOW_VULKAN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE)
 public:
     Window(const Vector2f &extent)
         : mHandle(nullptr), mIsVisible(false)
@@ -46,19 +46,19 @@ public:
         SDL_Rect rect;
         SDL_GetDisplayBounds(0, &rect);
 
-        auto aspect = 4.0 / 3.0;
+        auto aspect = 4.0f / 3.0f;
 
         int32_t actualWidth;
         int32_t actualHeight;
 
         if (rect.w > rect.h)
         {
-            actualHeight = rect.h * 0.75;
+            actualHeight = rect.h * 0.75f;
             actualWidth = actualHeight * aspect;
         }
         else
         {
-            actualWidth = rect.w * 0.75;
+            actualWidth = rect.w * 0.75f;
             actualHeight = actualWidth / aspect;
         }
 

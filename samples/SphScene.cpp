@@ -56,9 +56,9 @@ void SphScene::Init()
 		.SetPipelineLayout(mRasterPipelineLayout.get());
 
 	mRasterPipeline->pColorBlendState = colorBlendStateInfo;
-	mRasterPipeline->renderPass = App::Instance().GetGraphicsContext()->GetDefaultRenderPass()->GetHandle();
+	mRasterPipeline->renderPass = App::Instance().GetGraphicsContext()->GetSwapChain()->GetDefaultRenderPass()->GetHandle();
 
-	mRasterCommandBuffers = App::Instance().GetGraphicsContext()->GetDevice()->GetRasterCommandPool()->CreatePrimaryCommandBuffers(App::Instance().GetGraphicsContext()->GetDefaultFrameBuffers().size());
+	mRasterCommandBuffers = App::Instance().GetGraphicsContext()->GetDevice()->GetRasterCommandPool()->CreatePrimaryCommandBuffers(App::Instance().GetGraphicsContext()->GetSwapChain()->GetImageViews().size());
 
 	mImageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
 	mRenderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
@@ -123,15 +123,11 @@ void SphScene::Init()
 
 	for (size_t i = 0; i < mRasterCommandBuffers.size(); ++i)
 	{
-		VkRect2D renderArea{};
-		renderArea.extent = App::Instance().GetGraphicsContext()->GetSwapChain()->GetVkExtent();
-		renderArea.offset = {0, 0};
-
 		mRasterCommandBuffers[i]->Record([&]()
 										 {
-											 mRasterCommandBuffers[i]->BeginRenderPass(App::Instance().GetGraphicsContext()->GetDefaultRenderPass()->GetHandle(),
-																					   App::Instance().GetGraphicsContext()->GetDefaultFrameBuffers()[i]->GetHandle(),
-																					   renderArea,
+											 mRasterCommandBuffers[i]->BeginRenderPass(App::Instance().GetGraphicsContext()->GetSwapChain()->GetDefaultRenderPass()->GetHandle(),
+																					   App::Instance().GetGraphicsContext()->GetSwapChain()->GetDefaultFrameBuffers()[i]->GetHandle(),
+																					   App::Instance().GetGraphicsContext()->GetSwapChain()->GetRenderArea(),
 																					   {VkClearValue{0.0f, 0.0f, 0.0f, 1.0f}},
 																					   VK_SUBPASS_CONTENTS_INLINE);
 
@@ -234,7 +230,7 @@ void SphScene::Render()
 	mInFlightFences[currentFrame]->Reset();
 
 	mRasterCommandBuffers[swapChainImageIdx]->Submit({PipelineStage::COLOR_ATTACHMENT_OUTPUT}, {mImageAvailableSemaphores[currentFrame].get()}, {mRenderFinishedSemaphores[currentFrame].get()}, mInFlightFences[currentFrame].get());
-	mRasterCommandBuffers[swapChainImageIdx]->Present({App::Instance().GetGraphicsContext()->GetSwapChain()}, swapChainImageIdx, {mRenderFinishedSemaphores[currentFrame].get()});
+	mRasterCommandBuffers[swapChainImageIdx]->Present(swapChainImageIdx, {mRenderFinishedSemaphores[currentFrame].get()});
 	App::Instance().GetGraphicsContext()->GetDevice()->GetPresentQueue()->WaitIdle();
 
 	currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;

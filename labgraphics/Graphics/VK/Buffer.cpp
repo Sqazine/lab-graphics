@@ -42,11 +42,11 @@ Buffer::Buffer(Device &device,
     VkMemoryAllocateFlagsInfo flagsInfo{};
     flagsInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO;
     flagsInfo.pNext = nullptr;
+    flagsInfo.deviceMask = -1;
     if (mDevice.GetRequiredFeature() & DeviceFeature::BUFFER_ADDRESS)
         flagsInfo.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
     else
         flagsInfo.flags = 0;
-    flagsInfo.deviceMask = -1;
 
     VkMemoryAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;

@@ -15,8 +15,6 @@ Device::Device(const Instance &instance, uint64_t requiredFeature)
     vkGetPhysicalDeviceProperties(mPhysicalDevice, &mPhysicalDeviceProps);
     vkGetPhysicalDeviceMemoryProperties(mPhysicalDevice, &mPhysicalDeviceMemoryProps);
 
-    mSwapChainSupportDetails = QuerySwapChainDetails(mPhysicalDevice);
-
     mRayTracingPipelineProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;
 
     VkPhysicalDeviceProperties2 deviceProperties2 = {};
@@ -120,7 +118,7 @@ const VkDevice &Device::GetHandle() const
 {
     return mHandle;
 }
-const VkPhysicalDevice &Device::GetPhysicalHandle()
+const VkPhysicalDevice &Device::GetPhysicalHandle() const
 {
     return mPhysicalDevice;
 }
@@ -343,24 +341,6 @@ VkPhysicalDevice Device::SelectPhyDevice()
     return result;
 }
 
-SwapChainSupportDetails Device::QuerySwapChainDetails(VkPhysicalDevice phyDevice)
-{
-    SwapChainSupportDetails result;
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(phyDevice, mInstance.GetSurface(), &result.surfaceCapabilities);
-
-    uint32_t surfaceFormatCount = 0;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(phyDevice, mInstance.GetSurface(), &surfaceFormatCount, nullptr);
-    result.surfaceFormats.resize(surfaceFormatCount);
-    vkGetPhysicalDeviceSurfaceFormatsKHR(phyDevice, mInstance.GetSurface(), &surfaceFormatCount, result.surfaceFormats.data());
-
-    uint32_t presentModeCount = 0;
-    vkGetPhysicalDeviceSurfacePresentModesKHR(phyDevice, mInstance.GetSurface(), &presentModeCount, nullptr);
-    result.surfacePresentModes.resize(presentModeCount);
-    vkGetPhysicalDeviceSurfacePresentModesKHR(phyDevice, mInstance.GetSurface(), &presentModeCount, result.surfacePresentModes.data());
-
-    return result;
-}
-
 const VkPhysicalDeviceRayTracingPipelinePropertiesKHR &Device::GetRayTracingPipelineProps() const
 {
     return mRayTracingPipelineProperties;
@@ -383,11 +363,6 @@ const VkPhysicalDeviceProperties &Device::GetPhysicalProps() const
 const VkPhysicalDeviceMemoryProperties &Device::GetPhysicalMemoryProps() const
 {
     return mPhysicalDeviceMemoryProps;
-}
-
-const SwapChainSupportDetails &Device::GetSwapChainSupportDetails() const
-{
-    return mSwapChainSupportDetails;
 }
 
 std::unique_ptr<DescriptorTable> Device::CreateDescriptorTable()

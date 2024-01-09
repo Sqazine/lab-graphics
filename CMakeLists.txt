@@ -105,6 +105,5 @@ add_subdirectory(labgraphics)
 
 add_subdirectory(samples)
 # add_subdirectory(samples/soft-ray-tracing-example)
-add_subdirectory(samples/ray-tracing-example)
 add_subdirectory(samples/pbr-example)
 # add_subdirectory(samples/comp5822m-example)

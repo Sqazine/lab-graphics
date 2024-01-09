@@ -25,15 +25,11 @@ public:
     Instance *GetInstance() const;
     Device *GetDevice() const;
     SwapChain *GetSwapChain() const;
-    RenderPass *GetDefaultRenderPass() const;
-
-    const std::vector<std::unique_ptr<Framebuffer>> &GetDefaultFrameBuffers() const;
 
 private:
     std::unique_ptr<Instance> mInstance;
     std::unique_ptr<Device> mDevice;
 
     std::unique_ptr<SwapChain> mSwapChain;
-    std::unique_ptr<RenderPass> mDefaultRenderPass;
-    std::vector<std::unique_ptr<Framebuffer>> mSwapChainFrameBuffers;
+ 
 };

@@ -26,7 +26,7 @@ void SceneImgui::Init()
     mDescriptorTable->GetPool()->AddPoolDesc(DescriptorType::STORAGE_BUFFER_DYNAMIC, 1000);
     mDescriptorTable->GetPool()->AddPoolDesc(DescriptorType::INPUT_ATTACHMENT, 1000);
 
-    mRasterCommandBuffers = App::Instance().GetGraphicsContext()->GetDevice()->GetRasterCommandPool()->CreatePrimaryCommandBuffers(App::Instance().GetGraphicsContext()->GetDefaultFrameBuffers().size());
+    mRasterCommandBuffers = App::Instance().GetGraphicsContext()->GetDevice()->GetRasterCommandPool()->CreatePrimaryCommandBuffers(App::Instance().GetGraphicsContext()->GetSwapChain()->GetDefaultFrameBuffers().size());
 
     mImageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     mRenderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
@@ -62,10 +62,10 @@ void SceneImgui::Init()
     init_info.PipelineCache = VK_NULL_HANDLE;
     init_info.DescriptorPool = mDescriptorTable->GetPool()->GetHandle();
     init_info.Allocator = nullptr;
-    init_info.MinImageCount = App::Instance().GetGraphicsContext()->GetSwapChain()->GetImageCount();
-    init_info.ImageCount = App::Instance().GetGraphicsContext()->GetSwapChain()->GetImageCount();
+    init_info.MinImageCount = App::Instance().GetGraphicsContext()->GetSwapChain()->GetImageViews().size();
+    init_info.ImageCount = App::Instance().GetGraphicsContext()->GetSwapChain()->GetImageViews().size();
     init_info.CheckVkResultFn = check_vk_result;
-    ImGui_ImplVulkan_Init(&init_info, App::Instance().GetGraphicsContext()->GetDefaultRenderPass()->GetHandle());
+    ImGui_ImplVulkan_Init(&init_info, App::Instance().GetGraphicsContext()->GetSwapChain()->GetDefaultRenderPass()->GetHandle());
 
     // Load Fonts
     // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
@@ -164,12 +164,10 @@ void SceneImgui::RenderUI()
 
         mRasterCommandBuffers[swapChainImageIdx]->Record([&]()
                                                          {
-                                                             VkRect2D renderArea{};
-                                                             renderArea.extent = App::Instance().GetGraphicsContext()->GetSwapChain()->GetVkExtent();
-                                                             renderArea.offset = {0, 0};
-                                                             mRasterCommandBuffers[swapChainImageIdx]->BeginRenderPass(App::Instance().GetGraphicsContext()->GetDefaultRenderPass()->GetHandle(),
-                                                                                                                       App::Instance().GetGraphicsContext()->GetDefaultFrameBuffers()[swapChainImageIdx]->GetHandle(),
-                                                                                                                       renderArea,
+                                                          
+                                                             mRasterCommandBuffers[swapChainImageIdx]->BeginRenderPass(App::Instance().GetGraphicsContext()->GetSwapChain()->GetDefaultRenderPass()->GetHandle(),
+                                                                                                                       App::Instance().GetGraphicsContext()->GetSwapChain()->GetDefaultFrameBuffers()[swapChainImageIdx]->GetHandle(),
+                                                                                                                       App::Instance().GetGraphicsContext()->GetSwapChain()->GetRenderArea(),
                                                                                                                        {VkClearValue{mClearColor.x, mClearColor.y, mClearColor.z, mClearColor.w}},
                                                                                                                        VK_SUBPASS_CONTENTS_INLINE);
                                                              // Record dear imgui primitives into command buffer
@@ -178,7 +176,7 @@ void SceneImgui::RenderUI()
                                                          });
 
         mRasterCommandBuffers[swapChainImageIdx]->Submit({PipelineStage::COLOR_ATTACHMENT_OUTPUT}, {mImageAvailableSemaphores[currentFrame].get()}, {mRenderFinishedSemaphores[currentFrame].get()}, mInFlightFences[currentFrame].get());
-        mRasterCommandBuffers[swapChainImageIdx]->Present({App::Instance().GetGraphicsContext()->GetSwapChain()}, swapChainImageIdx, {mRenderFinishedSemaphores[currentFrame].get()});
+        mRasterCommandBuffers[swapChainImageIdx]->Present(swapChainImageIdx, {mRenderFinishedSemaphores[currentFrame].get()});
         App::Instance().GetGraphicsContext()->GetDevice()->GetPresentQueue()->WaitIdle();
 
         currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;

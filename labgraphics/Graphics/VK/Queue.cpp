@@ -1,7 +1,8 @@
 #include "Queue.h"
 #include "Device.h"
 #include <iostream>
-#include "VK/Utils.h"
+#include "Utils.h"
+#include "Base/App.h"
 
 Queue::Queue(Device& device, uint32_t familyIndex)
 	:mDevice(device)
@@ -39,5 +40,10 @@ PresentQueue::PresentQueue(Device& device, uint32_t familyIndex)
 
 void PresentQueue::Present(const VkPresentInfoKHR& info) const
 {
-	VK_CHECK(vkQueuePresentKHR(mHandle, &info))
+	auto err = vkQueuePresentKHR(mHandle, &info);
+
+	if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR)
+	{
+		App::Instance().GetGraphicsContext()->GetSwapChain()->ReBuild();
+	}
 }

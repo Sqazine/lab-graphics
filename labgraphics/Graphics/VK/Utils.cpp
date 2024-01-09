@@ -18,11 +18,11 @@ std::vector<VkLayerProperties> GetInstanceLayerProps()
     std::cout << "[INFO]Available Instance Layers:" << std::endl;
     for (const auto &layer : availableInstanceLayerProps)
         std::cout << "[INFO]     name: " << layer.layerName
-                  << " impl_ver: "
+                  << " \n\t\timpl_version: "
                   << VK_VERSION_MAJOR(layer.implementationVersion) << "."
                   << VK_VERSION_MINOR(layer.implementationVersion) << "."
                   << VK_VERSION_PATCH(layer.implementationVersion)
-                  << " spec_ver: "
+                  << " \n\t\tspec_version: "
                   << VK_VERSION_MAJOR(layer.specVersion) << "."
                   << VK_VERSION_MINOR(layer.specVersion) << "."
                   << VK_VERSION_PATCH(layer.specVersion)
@@ -38,40 +38,14 @@ std::vector<VkExtensionProperties> GetInstanceExtensionProps()
 
     std::cout << "[INFO]Available Instance Extensions:" << std::endl;
     for (const auto &ext : availableInstanceExtProps)
-        std::cout << "[INFO]     name: " << ext.extensionName << " spec_ver: "
+        std::cout << "[INFO]     name: " << ext.extensionName << " \n\t\tspec_version: "
                   << VK_VERSION_MAJOR(ext.specVersion) << "."
                   << VK_VERSION_MINOR(ext.specVersion) << "."
                   << VK_VERSION_PATCH(ext.specVersion) << std::endl;
 
     return availableInstanceExtProps;
 }
-std::vector<VkExtensionProperties> GetPhysicalDeviceExtensionProps(VkPhysicalDevice device)
-{
-    uint32_t physicalDeviceExtCount = 0;
-    vkEnumerateDeviceExtensionProperties(device, nullptr, &physicalDeviceExtCount, nullptr);
-    std::vector<VkExtensionProperties> phyDeviceExtProps(physicalDeviceExtCount);
-    vkEnumerateDeviceExtensionProperties(device, nullptr, &physicalDeviceExtCount, phyDeviceExtProps.data());
 
-    return phyDeviceExtProps;
-}
-VkPhysicalDeviceProperties GetPhysicalDeviceProps(VkPhysicalDevice device)
-{
-    VkPhysicalDeviceProperties props;
-    vkGetPhysicalDeviceProperties(device, &props);
-    return props;
-}
-VkPhysicalDeviceMemoryProperties GetPhysicalDeviceMemoryProps(VkPhysicalDevice device)
-{
-    VkPhysicalDeviceMemoryProperties props;
-    vkGetPhysicalDeviceMemoryProperties(device, &props);
-    return props;
-}
-VkPhysicalDeviceFeatures GetPhysicalDeviceFeatures(VkPhysicalDevice device)
-{
-    VkPhysicalDeviceFeatures features;
-    vkGetPhysicalDeviceFeatures(device, &features);
-    return features;
-}
 bool CheckValidationLayerSupport(std::vector<const char *> validationLayerNames, std::vector<VkLayerProperties> instanceLayerProps)
 {
     for (const char *layerName : validationLayerNames)
@@ -149,25 +123,6 @@ QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surfa
     return indices;
 }
 
-SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface)
-{
-    SwapChainSupportDetails details;
-
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.surfaceCapabilities);
-
-    uint32_t formatCount;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
-    details.surfaceFormats.resize(formatCount);
-    vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, details.surfaceFormats.data());
-
-    uint32_t presentModeCount;
-    vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
-    details.surfacePresentModes.resize(presentModeCount);
-    vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, details.surfacePresentModes.data());
-
-    return details;
-}
-
 VkShaderModule CreateShaderModuleFromSpirvFile(VkDevice device, std::string_view filePath)
 {
     std::ifstream file(filePath.data(), std::ios::binary);
@@ -198,29 +153,6 @@ VkShaderModule CreateShaderModuleFromSpirvFile(VkDevice device, std::string_view
     VK_CHECK(vkCreateShaderModule(device, &info, nullptr, &module));
 
     return module;
-}
-
-Format FindSupportedFormat(VkPhysicalDevice phyDevice, const std::vector<Format> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features)
-{
-    for (Format format : candidates)
-    {
-        VkFormatProperties props;
-        vkGetPhysicalDeviceFormatProperties(phyDevice, format.ToVkHandle(), &props);
-
-        if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features)
-            return format;
-        else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features)
-            return format;
-        throw std::runtime_error("failed to find supported format!");
-    }
-}
-
-Format FindDepthFormat(VkPhysicalDevice phyDevice, bool needStencil)
-{
-    if (needStencil)
-        return FindSupportedFormat(phyDevice, {Format::D32_SFLOAT_S8_UINT, Format::D16_UNORM_S8_UINT, Format::D24_UNORM_S8_UINT}, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
-    else
-        return FindSupportedFormat(phyDevice, {Format::D32_SFLOAT ,Format::D16_UNORM}, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
 std::string ReadFile(std::string_view filename)

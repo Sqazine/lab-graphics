@@ -44,7 +44,7 @@ public:
 	~Device();
 
 	const VkDevice &GetHandle() const;
-	const VkPhysicalDevice &GetPhysicalHandle();
+	const VkPhysicalDevice &GetPhysicalHandle() const;
 	const GraphicsQueue *GetGraphicsQueue();
 	const ComputeQueue *GetComputeQueue();
 	const PresentQueue *GetPresentQueue();
@@ -96,8 +96,6 @@ public:
 	const VkPhysicalDeviceProperties &GetPhysicalProps() const;
 	const VkPhysicalDeviceMemoryProperties &GetPhysicalMemoryProps() const;
 
-	const SwapChainSupportDetails &GetSwapChainSupportDetails() const;
-
 	std::unique_ptr<DescriptorTable> CreateDescriptorTable();
 
 	PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectNameEXT = nullptr;
@@ -120,7 +118,6 @@ private:
 
 private:
 	VkPhysicalDevice SelectPhyDevice();
-	SwapChainSupportDetails QuerySwapChainDetails(VkPhysicalDevice phyDevice);
 
 	const Instance &mInstance;
 	VkPhysicalDevice mPhysicalDevice;
@@ -129,7 +126,7 @@ private:
 	VkPhysicalDeviceRayTracingPipelinePropertiesKHR mRayTracingPipelineProperties{};
 	VkPhysicalDeviceAccelerationStructureFeaturesKHR mRayTracingAccelerationFeatures{};
 	VkPhysicalDeviceAccelerationStructurePropertiesKHR mRayTracingAccelerationProps{};
-	SwapChainSupportDetails mSwapChainSupportDetails;
+
 	VkDevice mHandle;
 
 	uint64_t mRequiredFeature;

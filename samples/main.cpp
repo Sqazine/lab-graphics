@@ -4,6 +4,7 @@
 #include "Rayman/RaymanScene.h"
 #include "SceneRayTraceTriangle.h"
 #include "ImguiScene.h"
+#include "RayTracingExample/RtxScene.h"
 class SceneManager : public Scene
 {
 public:
@@ -15,7 +16,8 @@ public:
         // mScenes.emplace_back(std::make_unique<RaymanScene>(std::string(ASSETS_DIR) + "rayman/scene.json"));
 
         // mScenes.emplace_back(std::make_unique<SceneRayTraceTriangle>());
-        mScenes.emplace_back(std::make_unique<SceneImgui>());
+        //mScenes.emplace_back(std::make_unique<SceneImgui>());
+        mScenes.emplace_back(std::make_unique<RtxScene>());
     }
     ~SceneManager() override {}
 

@@ -15,8 +15,6 @@ public:
     void CleanUp() override;
 
 private:
-    // ImGui_ImplVulkanH_Window mMainWindowData;
-
     bool mShowDemoWindow = true;
     bool mShowAnotherWindow = false;
     ImVec4 mClearColor = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);

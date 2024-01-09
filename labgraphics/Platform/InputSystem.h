@@ -73,6 +73,27 @@ public:
 	KeyboardState &GetKeyboard();
 	MouseState &GetMouse();
 
+	 bool IsWindowCloseButtonClick() const
+    {
+        return mIsWindowCloseButtonClick;
+    }
+
+    bool IsWindowMaxButtonClick() const
+    {
+        return mIsWindowMaxButtonClick;
+    }
+
+    bool IsWindowMinButtonClick() const
+    {
+        return mIsWindowMinButtonClick;
+    }
+
+    bool IsWindowResize() const
+    {
+        return mIsWindowResize;
+    }
+
+
 private:
 	InputSystem() = default;
 	~InputSystem() = default;
@@ -84,6 +105,11 @@ private:
 
 	void Init();
 	void PostUpdate();
-	void ProcessInput(SDL_Event event);
+	void ProcessInput();
 	void PreUpdate();
+
+	  bool mIsWindowCloseButtonClick;
+    bool mIsWindowMaxButtonClick;
+    bool mIsWindowMinButtonClick;
+    bool mIsWindowResize;
 };

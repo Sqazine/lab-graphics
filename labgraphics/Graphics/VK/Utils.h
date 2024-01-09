@@ -122,30 +122,14 @@ struct QueueFamilyIndices
 	}
 };
 
-struct SwapChainSupportDetails
-{
-	VkSurfaceCapabilitiesKHR surfaceCapabilities;
-	std::vector<VkSurfaceFormatKHR> surfaceFormats;
-	std::vector<VkPresentModeKHR> surfacePresentModes;
-};
-
 std::vector<VkLayerProperties> GetInstanceLayerProps();
 std::vector<VkExtensionProperties> GetInstanceExtensionProps();
 bool CheckValidationLayerSupport(std::vector<const char *> validationLayerNames, std::vector<VkLayerProperties> instanceLayerProps);
 bool CheckExtensionSupport(std::vector<const char *> extensionNames, std::vector<VkExtensionProperties> extensionProps);
 
-std::vector<VkExtensionProperties> GetPhysicalDeviceExtensionProps(VkPhysicalDevice device);
-VkPhysicalDeviceProperties GetPhysicalDeviceProps(VkPhysicalDevice device);
-VkPhysicalDeviceMemoryProperties GetPhysicalDeviceMemoryProps(VkPhysicalDevice device);
-VkPhysicalDeviceFeatures GetPhysicalDeviceFeatures(VkPhysicalDevice device);
-
 QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface);
-SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface);
 
 VkShaderModule CreateShaderModuleFromSpirvFile(VkDevice device, std::string_view filePath);
-
-Format FindSupportedFormat(VkPhysicalDevice phyDevice, const std::vector<Format> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
-Format FindDepthFormat(VkPhysicalDevice phyDevice, bool needStencil = false);
 
 std::string ReadFile(std::string_view filename);
 

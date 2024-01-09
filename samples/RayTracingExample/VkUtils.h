@@ -6,24 +6,6 @@
 #include "labgraphics.h"
 namespace VkUtils
 {
-
-    namespace Details
-    {
-        static Device* sDevice;
-        static VkCommandPool sCommandPool;
-        static const TransferQueue* sTransferQueue;
-        static VkPhysicalDeviceMemoryProperties sPhysicalDeviceMemoryProperties;
-    }
-
-    void Init(Device* device, VkCommandPool commandPool);
-    uint32_t GetMemoryType(VkMemoryRequirements &memoryRequirimemts, VkMemoryPropertyFlags memoryProperties);
-    void ImageBarrier(VkCommandBuffer commandBuffer,
-                      VkImage image,
-                      VkImageSubresourceRange &subresourceRange,
-                      VkAccessFlags srcAccessMask,
-                      VkAccessFlags dstAccessMask,
-                      VkImageLayout oldLayout,
-                      VkImageLayout newLayout);
     class Buffer
     {
     public:

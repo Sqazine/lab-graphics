@@ -22,7 +22,7 @@ class GraphicsQueue : public Queue
 public:
 	GraphicsQueue(class Device &device, uint32_t familyIndex);
 	~GraphicsQueue() {}
-	// private:
+private:
 	friend class ComputeCommandBuffer;
 	friend class RasterCommandBuffer;
 	friend class RayTraceCommandBuffer;
@@ -39,7 +39,7 @@ public:
 	PresentQueue(class Device &device, uint32_t familyIndex);
 	~PresentQueue() {}
 
-	// private:
+private:
 	friend class RasterCommandBuffer;
 	friend class RayTraceCommandBuffer;
 

@@ -59,10 +59,7 @@ void App::ProcessInput()
 {
 	mInputSystem.PreUpdate();
 
-	SDL_Event event;
-	SDL_PollEvent(&event);
-
-	mInputSystem.ProcessInput(event);
+	mInputSystem.ProcessInput();
 
 	if (mInputSystem.GetKeyboard().GetKeyState(SDL_SCANCODE_ESCAPE) == ButtonState::PRESS)
 		Quit();

@@ -47,7 +47,7 @@ void SceneRayTraceTriangle::Init()
 
 	std::cout << "Recording frame commands.." << std::endl;
 
-	mCommandBuffers = App::Instance().GetGraphicsContext()->GetDevice()->GetRayTraceCommandPool()->CreatePrimaryCommandBuffers(App::Instance().GetGraphicsContext()->GetSwapChain()->GetImageCount());
+	mCommandBuffers = App::Instance().GetGraphicsContext()->GetDevice()->GetRayTraceCommandPool()->CreatePrimaryCommandBuffers(App::Instance().GetGraphicsContext()->GetSwapChain()->GetImageViews().size());
 }
 void SceneRayTraceTriangle::ProcessInput()
 {
@@ -133,7 +133,7 @@ void SceneRayTraceTriangle::Render()
 
 	commandBuffer->Submit({PipelineStage::COLOR_ATTACHMENT_OUTPUT},{mSemaphoreImageAvailable.get()},{mSemaphoreRenderAvailable.get()});
 
-	commandBuffer->Present({App::Instance().GetGraphicsContext()->GetSwapChain()},imageIndex,{mSemaphoreRenderAvailable.get()});
+	commandBuffer->Present(imageIndex,{mSemaphoreRenderAvailable.get()});
 }
 
 void SceneRayTraceTriangle::CleanUp()

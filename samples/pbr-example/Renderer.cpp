@@ -26,7 +26,7 @@ void Renderer::Init(uint32_t maxSamples)
 
 	assert(mRenderSamples >= 1);
 
-	mNumFrames=mSwapChain->GetImageCount();
+	mNumFrames=mSwapChain->GetImageViews().size();
 
 	mRenderTargets.resize(mNumFrames);
 	mResolveRenderTargets.resize(mNumFrames);

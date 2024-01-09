@@ -5,6 +5,7 @@
 #include "CommandPool.h"
 #include "DescriptorSet.h"
 #include "Image.h"
+#include "Base/App.h"
 
 CommandBuffer::CommandBuffer(Device &device, VkCommandPool cmdPool, VkCommandBufferLevel level)
 	: mDevice(device), mRelatedCmdPoolHandle(cmdPool)
@@ -337,12 +338,8 @@ void RasterCommandBuffer::Submit(const std::vector<PipelineStage> &waitStages, c
 	}
 }
 
-void RasterCommandBuffer::Present(const std::vector<SwapChain *> swapChains, uint32_t imageIndex, const std::vector<Semaphore *> waitSemaphores) const
+void RasterCommandBuffer::Present(uint32_t imageIndex, const std::vector<Semaphore *> waitSemaphores) const
 {
-	std::vector<VkSwapchainKHR> rawSwapChains(swapChains.size());
-	for (size_t i = 0; i < swapChains.size(); ++i)
-		rawSwapChains[i] = swapChains[i]->GetHandle();
-
 	std::vector<VkSemaphore> rawWait(waitSemaphores.size());
 
 	for (size_t i = 0; i < rawWait.size(); ++i)
@@ -352,8 +349,8 @@ void RasterCommandBuffer::Present(const std::vector<SwapChain *> swapChains, uin
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 	presentInfo.waitSemaphoreCount = rawWait.size();
 	presentInfo.pWaitSemaphores = rawWait.data();
-	presentInfo.swapchainCount = rawSwapChains.size();
-	presentInfo.pSwapchains = rawSwapChains.data();
+	presentInfo.swapchainCount = 1;
+	presentInfo.pSwapchains = &App::Instance().GetGraphicsContext()->GetSwapChain()->GetHandle();
 	presentInfo.pImageIndices = &imageIndex;
 
 	mDevice.GetPresentQueue()->Present(presentInfo);
@@ -490,12 +487,8 @@ void RayTraceCommandBuffer::Submit(const std::vector<PipelineStage> &waitStages,
 	}
 }
 
-void RayTraceCommandBuffer::Present(const std::vector<SwapChain *> swapChains, uint32_t imageIndex, const std::vector<Semaphore *> waitSemaphores) const
+void RayTraceCommandBuffer::Present(uint32_t imageIndex, const std::vector<Semaphore *> waitSemaphores) const
 {
-	std::vector<VkSwapchainKHR> rawSwapChains(swapChains.size());
-	for (size_t i = 0; i < swapChains.size(); ++i)
-		rawSwapChains[i] = swapChains[i]->GetHandle();
-
 	std::vector<VkSemaphore> rawWait(waitSemaphores.size());
 
 	for (size_t i = 0; i < rawWait.size(); ++i)
@@ -505,8 +498,8 @@ void RayTraceCommandBuffer::Present(const std::vector<SwapChain *> swapChains, u
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 	presentInfo.waitSemaphoreCount = rawWait.size();
 	presentInfo.pWaitSemaphores = rawWait.data();
-	presentInfo.swapchainCount = rawSwapChains.size();
-	presentInfo.pSwapchains = rawSwapChains.data();
+	presentInfo.swapchainCount = 1;
+	presentInfo.pSwapchains = &App::Instance().GetGraphicsContext()->GetSwapChain()->GetHandle();
 	presentInfo.pImageIndices = &imageIndex;
 
 	mDevice.GetPresentQueue()->Present(presentInfo);
