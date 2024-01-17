@@ -191,6 +191,12 @@ RasterPipeline &RasterPipeline::SetPipelineLayout(PipelineLayout *layout)
 	return *this;
 }
 
+RasterPipeline &RasterPipeline::SetRenderPass(RenderPass *renderPass)
+{
+	mRenderPass = renderPass;
+	return *this;
+}
+
 void RasterPipeline::Build()
 {
 	auto shaderStages = mShaderGroup.GetShaderStages();
@@ -282,7 +288,7 @@ void RasterPipeline::Build()
 	info.pColorBlendState = &pColorBlendState;
 	info.pDynamicState = &dynamicState;
 	info.subpass = 0;
-	info.renderPass = renderPass;
+	info.renderPass = mRenderPass->GetHandle();
 	info.basePipelineIndex = -1;
 	info.basePipelineHandle = VK_NULL_HANDLE;
 
@@ -290,7 +296,7 @@ void RasterPipeline::Build()
 }
 
 ComputePipeline::ComputePipeline(const Device &device)
-	: Pipeline(device), mShader(nullptr)
+	: Pipeline(device)
 {
 }
 
@@ -300,7 +306,7 @@ ComputePipeline::~ComputePipeline()
 
 ComputePipeline &ComputePipeline::SetShader(Shader *shader)
 {
-	mShader.reset(shader);
+	mShaderGroup.SetShader(shader);
 	return *this;
 }
 
@@ -316,7 +322,7 @@ void ComputePipeline::Build()
 	pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
 	pipelineInfo.pNext = nullptr;
 	pipelineInfo.flags = 0;
-	pipelineInfo.stage = mShader->GetPipelineStageInfo();
+	pipelineInfo.stage = mShaderGroup.GetShaderStages()[0];
 	pipelineInfo.layout = mLayout->GetHandle();
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 	pipelineInfo.basePipelineIndex = -1;

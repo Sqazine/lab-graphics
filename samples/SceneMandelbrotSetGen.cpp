@@ -43,7 +43,7 @@ void SceneMandelbrotSetGen::Init()
 
     VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
     colorBlendAttachment.blendEnable = VK_FALSE;
-    colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+    colorBlendAttachment.srcColorBlendFactor = BLEND_FACTOR_CAST(BlendFactor::ONE);
     colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
     colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
     colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
@@ -68,7 +68,6 @@ void SceneMandelbrotSetGen::Init()
     auto fragShader = App::Instance().GetGraphicsContext()->GetDevice()->CreateShader(ShaderStage::FRAGMENT, ReadFile(std::string(ASSETS_DIR) + "shaders/post.frag"));
 
     mRasterPipeline = std::make_unique<RasterPipeline>(*App::Instance().GetGraphicsContext()->GetDevice());
-
     mRasterPipeline->SetVertexShader(vertShader)
         .SetFragmentShader(fragShader)
         .SetPrimitiveTopology(PrimitiveTopology::TRIANGLE_LIST)
@@ -77,10 +76,10 @@ void SceneMandelbrotSetGen::Init()
         .AddScissor(Vector2i32::ZERO, App::Instance().GetGraphicsContext()->GetSwapChain()->GetExtent())
         .SetPolygonMode(PolygonMode::FILL)
         .SetFrontFace(FrontFace::CCW)
-        .SetPipelineLayout(mPipelineLayout.get());
+        .SetPipelineLayout(mPipelineLayout.get())
+        .SetRenderPass(App::Instance().GetGraphicsContext()->GetSwapChain()->GetDefaultRenderPass());
 
     mRasterPipeline->pColorBlendState = colorBlendStateInfo;
-    mRasterPipeline->renderPass = App::Instance().GetGraphicsContext()->GetSwapChain()->GetDefaultRenderPass()->GetHandle();
 
     mRasterCommandBuffers = App::Instance().GetGraphicsContext()->GetDevice()->GetRasterCommandPool()->CreatePrimaryCommandBuffers(App::Instance().GetGraphicsContext()->GetSwapChain()->GetDefaultFrameBuffers().size());
 
@@ -134,22 +133,3 @@ void SceneMandelbrotSetGen::Render()
 
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
-
-// void SceneMandelbrotSetGen::SaveImage(std::string_view fileName)
-// {
-//     Vector4f *pixels = mImgBuffer->Map<Vector4f>(0, mImgBuffer->GetSize());
-
-//     std::vector<uint8_t> image(mWindowExtent.x * mWindowExtent.y * 4);
-
-//     for (size_t i = 0; i < mWindowExtent.x * mWindowExtent.y; ++i)
-//     {
-//         image[i * 4 + 0] = ((uint8_t)(255.0f * pixels[i].x));
-//         image[i * 4 + 1] = ((uint8_t)(255.0f * pixels[i].y));
-//         image[i * 4 + 2] = ((uint8_t)(255.0f * pixels[i].z));
-//         image[i * 4 + 3] = ((uint8_t)(255.0f * pixels[i].w));
-//     }
-
-//     mImgBuffer->Unmap();
-
-//     stbi_write_png(fileName.data(), mWindowExtent.x, mWindowExtent.y, 4, image.data(), mWindowExtent.x * 4);
-// }

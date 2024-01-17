@@ -15,8 +15,6 @@ public:
 	void Render() override;
 
 private:
-	// void SaveImage(std::string_view fileName);
-
 	struct Uniform
 	{
 		uint32_t width;

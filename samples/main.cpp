@@ -16,8 +16,8 @@ public:
         // mScenes.emplace_back(std::make_unique<RaymanScene>(std::string(ASSETS_DIR) + "rayman/scene.json"));
 
         // mScenes.emplace_back(std::make_unique<SceneRayTraceTriangle>());
-        //mScenes.emplace_back(std::make_unique<SceneImgui>());
-        mScenes.emplace_back(std::make_unique<RtxScene>());
+        mScenes.emplace_back(std::make_unique<SceneImgui>());
+        // mScenes.emplace_back(std::make_unique<RtxScene>());
     }
     ~SceneManager() override {}
 

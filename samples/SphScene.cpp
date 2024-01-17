@@ -11,8 +11,6 @@ SphScene::~SphScene()
 
 void SphScene::Init()
 {
-	// App::Instance().GetWindow()->Resize(1024, 768);
-
 	VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
 	colorBlendAttachment.blendEnable = VK_FALSE;
 	colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
@@ -53,10 +51,10 @@ void SphScene::Init()
 		.AddScissor(Vector2i32::ZERO, App::Instance().GetGraphicsContext()->GetSwapChain()->GetExtent())
 		.SetPolygonMode(PolygonMode::FILL)
 		.SetFrontFace(FrontFace::CCW)
-		.SetPipelineLayout(mRasterPipelineLayout.get());
+		.SetPipelineLayout(mRasterPipelineLayout.get())
+		.SetRenderPass(App::Instance().GetGraphicsContext()->GetSwapChain()->GetDefaultRenderPass());
 
 	mRasterPipeline->pColorBlendState = colorBlendStateInfo;
-	mRasterPipeline->renderPass = App::Instance().GetGraphicsContext()->GetSwapChain()->GetDefaultRenderPass()->GetHandle();
 
 	mRasterCommandBuffers = App::Instance().GetGraphicsContext()->GetDevice()->GetRasterCommandPool()->CreatePrimaryCommandBuffers(App::Instance().GetGraphicsContext()->GetSwapChain()->GetImageViews().size());
 

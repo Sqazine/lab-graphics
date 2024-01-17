@@ -6,8 +6,8 @@
 #include "PipelineLayout.h"
 #include "Math/Vector2.h"
 #include "Format.h"
+#include "RenderPass.h"
 #include "Enum.h"
-
 
 class Pipeline
 {
@@ -71,10 +71,10 @@ public:
 
 	RasterPipeline &SetPipelineLayout(PipelineLayout *layout);
 
+	RasterPipeline &SetRenderPass(RenderPass *renderPass);
+
 	VkPipelineDepthStencilStateCreateInfo pDepthStencilState{VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO};
 	VkPipelineColorBlendStateCreateInfo pColorBlendState{VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO};
-
-	VkRenderPass renderPass;
 
 private:
 	void Build() override;
@@ -104,6 +104,8 @@ private:
 	bool mIsAlphaToOneEnableEnable{false};
 	float mMinSampleShading{0};
 
+	RenderPass *mRenderPass;
+
 	RasterShaderGroup mShaderGroup;
 };
 
@@ -116,10 +118,9 @@ public:
 	ComputePipeline &SetShader(Shader *shader);
 
 	ComputePipeline &SetPipelineLayout(PipelineLayout *layout);
-
 private:
 	void Build() override;
-	std::unique_ptr<Shader> mShader;
+	ComputeShaderGroup mShaderGroup;
 };
 
 class RayTracePipeline : public Pipeline
@@ -138,7 +139,6 @@ public:
 	const RayTraceSBT &GetSBT() const;
 
 	RayTracePipeline &SetPipelineLayout(PipelineLayout *layout);
-
 private:
 	void Build() override;
 	RayTraceShaderGroup mShaderGroup;

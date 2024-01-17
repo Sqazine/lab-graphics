@@ -51,6 +51,25 @@ std::vector<VkPipelineShaderStageCreateInfo> RasterShaderGroup::GetShaderStages(
     return result;
 }
 
+bool RasterShaderGroup::CheckLink()
+{
+    return true;
+}
+
+void ComputeShaderGroup::SetShader(Shader *shader)
+{
+    mCompShader.reset(shader);
+}
+std::vector<VkPipelineShaderStageCreateInfo> ComputeShaderGroup::GetShaderStages()
+{
+    return {mCompShader->GetPipelineStageInfo()};
+}
+
+bool ComputeShaderGroup::CheckLink()
+{
+    return true;
+}
+
 void RayTraceShaderGroup::SetRayGenShader(Shader *shader)
 {
     mRayGenShader.reset(shader);
@@ -176,6 +195,11 @@ const std::vector<VkRayTracingShaderGroupCreateInfoKHR> &RayTraceShaderGroup::Ge
     mShaderGroups.insert(mShaderGroups.end(), mRayCallableShaderGroups.begin(), mRayCallableShaderGroups.end());
 
     return mShaderGroups;
+}
+
+bool RayTraceShaderGroup::CheckLink()
+{
+    return true;
 }
 
 VkRayTracingShaderGroupCreateInfoKHR RayTraceShaderGroup::CreateRayGenShaderGroup(uint32_t idx)

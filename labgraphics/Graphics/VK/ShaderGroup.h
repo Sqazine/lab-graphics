@@ -9,8 +9,10 @@ class ShaderGroup
 public:
     ShaderGroup() = default;
     virtual ~ShaderGroup() = default;
-
     virtual std::vector<VkPipelineShaderStageCreateInfo> GetShaderStages() = 0;
+
+protected:
+    virtual bool CheckLink() = 0;
 };
 
 class RasterShaderGroup : public ShaderGroup
@@ -27,12 +29,30 @@ public:
 
     std::vector<VkPipelineShaderStageCreateInfo> GetShaderStages() override;
 
+protected:
+    bool CheckLink() override;
+
 private:
     std::unique_ptr<Shader> mVertexShader{nullptr};
     std::unique_ptr<Shader> mTessCtrlShader{nullptr};
     std::unique_ptr<Shader> mTessEvalShader{nullptr};
     std::unique_ptr<Shader> mGeometryShader{nullptr};
     std::unique_ptr<Shader> mFragmentShader{nullptr};
+};
+
+class ComputeShaderGroup : public ShaderGroup
+{
+public:
+    ComputeShaderGroup() = default;
+    ~ComputeShaderGroup() = default;
+    void SetShader(Shader *shader);
+    std::vector<VkPipelineShaderStageCreateInfo> GetShaderStages() override;
+
+protected:
+    bool CheckLink() override;
+
+private:
+    std::unique_ptr<Shader> mCompShader{nullptr};
 };
 
 class RayTraceShaderGroup : ShaderGroup
@@ -59,6 +79,9 @@ public:
     const std::vector<VkRayTracingShaderGroupCreateInfoKHR> &GetRayCallableShaderGroups() const;
 
     const std::vector<VkRayTracingShaderGroupCreateInfoKHR> &GetShaderGroups();
+
+protected:
+    bool CheckLink() override;
 
 private:
     VkRayTracingShaderGroupCreateInfoKHR CreateRayGenShaderGroup(uint32_t idx);

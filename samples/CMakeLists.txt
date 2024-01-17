@@ -16,7 +16,7 @@ add_executable(sample ${SRC} ${SPH_SRC} ${MANDELBROT_SET_GENERATE_SRC} ${RAYMAN_
 
 target_link_libraries(sample PRIVATE labgraphics)
 target_include_directories(sample PRIVATE ${LIB_GRAPHICS_INC_DIR})
-target_compile_definitions(sample PRIVATE SHADER_DIR="${CMAKE_SOURCE_DIR}/assets/shaders/")
-target_compile_definitions(sample PRIVATE ASSETS_DIR="${CMAKE_SOURCE_DIR}/assets/")
-target_compile_definitions(sample PRIVATE RAY_TRACING_EXAMPLE_DIR="${CMAKE_SOURCE_DIR}/samples/RayTracingExample/assets/")
-file(COPY ${CMAKE_SOURCE_DIR}/assets/shaders/rayman/ DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+target_compile_definitions(sample PRIVATE SHADER_DIR="${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/")
+target_compile_definitions(sample PRIVATE ASSETS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/assets/")
+target_compile_definitions(sample PRIVATE RAY_TRACING_EXAMPLE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/RayTracingExample/assets/")
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/assets/shaders/rayman/ DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
