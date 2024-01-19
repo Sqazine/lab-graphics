@@ -128,7 +128,6 @@ if(ENABLE_GLSLANG_WEBMIN)
 endif()
 
 if(WIN32)
-    set(CMAKE_DEBUG_POSTFIX "d")
     option(OVERRIDE_MSVCCRT "Overrides runtime of MSVC " ON)
     if(MSVC AND OVERRIDE_MSVCCRT)
         include(ChooseMSVCCRT.cmake)

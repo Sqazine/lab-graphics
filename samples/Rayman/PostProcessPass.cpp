@@ -16,7 +16,7 @@
 #include "VK/Buffer.h"
 #include "VK/DescriptorSetLayout.h"
 #include "VK/DescriptorPool.h"
-#include "Platform/Logger.h"
+#include "Logger.h"
 
 PostProcessPass::PostProcessPass(const SwapChain &swapChain,
 								 Device &device,

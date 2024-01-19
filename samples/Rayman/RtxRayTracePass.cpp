@@ -22,7 +22,7 @@
 #include "RaymanScene.h"
 #include "ShaderCompiler.h"
 #include "Model.h"
-#include "Platform/InputSystem.h"
+#include "InputSystem.h"
 #include <array>
 #include "RtxRayTraceScene.h"
 #include "VK/CommandPool.h"

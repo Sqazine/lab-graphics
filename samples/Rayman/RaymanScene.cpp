@@ -11,9 +11,9 @@
 #include <utility>
 #include <stb/stb_image.h>
 #include "Texture.h"
-#include "Base/App.h"
+#include "App.h"
 #include "Model.h"
-#include "Platform/InputSystem.h"
+#include "InputSystem.h"
 #include "Math/Quaternion.h"
 #include "Math/Vector4.h"
 #include "RtxRayTraceScene.h"

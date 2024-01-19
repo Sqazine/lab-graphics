@@ -3,8 +3,8 @@
 #include "RtxRayTracePass.h"
 #include "VK/CommandPool.h"
 #include "VK/CommandBuffer.h"
-#include "Base/App.h"
-#include "Base/App.h"
+#include "App.h"
+#include "App.h"
 RtxRayTraceScene::RtxRayTraceScene(RaymanScene *scene)
     : mScene(scene)
 {

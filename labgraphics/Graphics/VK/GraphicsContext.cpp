@@ -1,8 +1,7 @@
 #include "GraphicsContext.h"
-#include "Base/App.h"
+#include "App.h"
 GraphicsContext::GraphicsContext()
 {
-
     mInstance = std::make_unique<Instance>(App::Instance().GetWindow(), gValidationLayers,gInstanceExtensions);
 
     mDevice = std::make_unique<Device>(*mInstance,DeviceFeature::RAY_TRACE);

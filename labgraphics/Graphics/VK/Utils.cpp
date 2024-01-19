@@ -5,7 +5,7 @@
 #include <sstream>
 #include <glslang/Public/ShaderLang.h>
 #include <glslang/SPIRV/GlslangToSpv.h>
-#include "Platform/Logger.h"
+#include "Logger.h"
 #include "Format.h"
 
 std::vector<VkLayerProperties> GetInstanceLayerProps()

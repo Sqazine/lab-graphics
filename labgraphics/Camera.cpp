@@ -1,5 +1,5 @@
 #include "Camera.h"
-#include "Base/App.h"
+#include "App.h"
 
 Camera::Camera()
 	: mPosition(Vector3f(0.0f, 0.0f, 1.0f)), mTarget(Vector3f(0.0f))

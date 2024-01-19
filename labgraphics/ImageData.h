@@ -32,14 +32,25 @@ public:
 	int GetWidth() const { return texWidth; }
 	int GetHeight() const { return texHeight; }
 	int GetImageSize() const { return imageSize; }
-	int GetChannels() const { return texChannels; }
-	void *GetPixels() const { return pixels; }
+	int GetChannels() const { return mChannels; }
+
+	template <typename T>
+	T *GetPixels() const
+	{
+		return reinterpret_cast<T *>(mPixels);
+	}
+
+	int32_t BytesPerPixel() const
+	{
+		return mChannels * (mHdr ? sizeof(float) : sizeof(uint8_t));
+	}
 
 private:
 	ImageDataType type;
-	void *pixels;
+	void *mPixels;
 	int texWidth;
 	int texHeight;
-	int texChannels;
+	int mChannels;
 	int imageSize;
+	bool mHdr;
 };

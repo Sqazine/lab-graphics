@@ -8,7 +8,7 @@ Texture::Texture(Device &device,
 				 Format format,
 				 ImageTiling tiling)
 {
-	auto stagingBuffer = device.CreateCPUBuffer(texture->GetPixels(), texture->GetImageSize(), BufferUsage::TRANSFER_SRC);
+	auto stagingBuffer = device.CreateCPUBuffer(texture->GetPixels<void>(), texture->GetImageSize(), BufferUsage::TRANSFER_SRC);
 
 	const auto extent = VkExtent2D{static_cast<uint32_t>(texture->GetWidth()), static_cast<uint32_t>(texture->GetHeight())};
 

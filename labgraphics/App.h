@@ -1,7 +1,7 @@
 #pragma once
-#include "Platform/Window.h"
-#include "Platform/Timer.h"
-#include "Platform/InputSystem.h"
+#include "Window.h"
+#include "Timer.h"
+#include "InputSystem.h"
 #include "VK/GraphicsContext.h"
 #include "Scene.h"
 class App

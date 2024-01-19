@@ -1,5 +1,5 @@
 #include "App.h"
-#include "Platform/Logger.h"
+#include "Logger.h"
 void App::Run()
 {
 	Init();

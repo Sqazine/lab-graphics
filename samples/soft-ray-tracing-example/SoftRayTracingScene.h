@@ -4,7 +4,7 @@
 #include <string_view>
 #include <memory>
 #include <vector>
-#include "Platform/Window.h"
+#include "Window.h"
 class SoftRayTracingScene : public Scene
 {
 public:

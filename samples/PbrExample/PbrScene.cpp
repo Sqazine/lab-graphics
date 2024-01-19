@@ -1,6 +1,6 @@
-#include "Scene.h"
-#include "Base/App.h"
-#include "Platform/InputSystem.h"
+#include "PbrScene.h"
+#include "App.h"
+#include "InputSystem.h"
 
 void PbrScene::Init()
 {

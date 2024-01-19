@@ -5,50 +5,48 @@
 #include <cgltf/cgltf.h>
 #include <vector>
 #include "labgraphics.h"
-#include "Material.h"
-struct _Vertex
+struct PbrVertex
 {
     Vector3f position;
     Vector3f normal;
     Vector2f texcoord;
 
-    _Vertex& operator=(const _Vertex& other)
+    PbrVertex &operator=(const PbrVertex &other)
     {
-        this->position=other.position;
-        this->normal=other.normal;
-        this->texcoord=other.texcoord;
+        this->position = other.position;
+        this->normal = other.normal;
+        this->texcoord = other.texcoord;
         return *this;
     }
 };
 
-enum class _MeshType
+enum class PbrMeshType
 {
     QUAD,
     SPHERE,
     CUBE,
 };
 
-struct _Mesh
+struct PbrMesh
 {
-    std::vector<_Vertex> mVertices;
+    std::vector<PbrVertex> mVertices;
     std::vector<uint32_t> mIndices;
 };
 
-class MeshInstance
+class PbrMeshInstance
 {
 public:
     Matrix4f modelMat;
-    Material material;
-    _Mesh mesh;
+    PbrMesh mesh;
 };
 
-class _Model
+class PbrModel
 {
 public:
-    _Model(_MeshType type);
-    _Model(std::string_view filePath);
+    PbrModel(PbrMeshType type);
+    PbrModel(std::string_view filePath);
 
-    const std::vector<MeshInstance> &GetMeshInstances() const;
+    const std::vector<PbrMeshInstance> &GetMeshInstances() const;
 
     const Matrix4f &GetModelMat();
 
@@ -67,5 +65,5 @@ private:
     void LoadMeshes(cgltf_data *data);
 
     Matrix4f mModelMat;
-    std::vector<MeshInstance> mMeshInstances;
+    std::vector<PbrMeshInstance> mMeshInstances;
 };

@@ -5,7 +5,7 @@
 #include "CommandPool.h"
 #include "DescriptorSet.h"
 #include "Image.h"
-#include "Base/App.h"
+#include "App.h"
 
 CommandBuffer::CommandBuffer(Device &device, VkCommandPool cmdPool, VkCommandBufferLevel level)
 	: mDevice(device), mRelatedCmdPoolHandle(cmdPool)

@@ -2,7 +2,7 @@
 #include <vulkan/vulkan.h>
 #include <SDL.h>
 #include <vector>
-#include "Platform/Window.h"
+#include "Window.h"
 
 
 class Instance

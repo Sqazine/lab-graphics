@@ -7,7 +7,6 @@
 #include "VK/CommandBuffer.h"
 #include "VK/DescriptorTable.h"
 #include "VK/SwapChain.h"
-#include "VK/UniformBuffer.h"
 
 enum class PostProcessType
 {

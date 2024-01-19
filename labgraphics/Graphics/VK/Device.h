@@ -9,7 +9,6 @@
 #include "SyncObject.h"
 #include "Image.h"
 #include "Utils.h"
-#include "UniformBuffer.h"
 #include "DescriptorTable.h"
 
 const std::vector<const char *> deviceExtensions = {

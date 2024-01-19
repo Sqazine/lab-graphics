@@ -9,7 +9,7 @@
 #include "VK/Device.h"
 
 constexpr int32_t LIGHT_NUM = 3;
-struct Light
+struct PbrLight
 {
 	alignas(16) Vector3f direction;
 	alignas(16) Vector3f radiance;
@@ -27,7 +27,7 @@ struct TransformUniforms
 
 struct ShadingUniforms
 {
-    Light lights[LIGHT_NUM];
+    PbrLight lights[LIGHT_NUM];
     Vector4f eyePosition;
 };
 
@@ -55,7 +55,7 @@ struct MeshBuffer
 
 using ModelBuffer = std::vector<MeshBuffer>;
 
-struct Texture
+struct PbrTexture
 {
     Resource<VkImage> image;
     VkImageView view;
@@ -98,7 +98,7 @@ struct UniformBufferWrapAllocation
 
 struct ImageMemoryBarrier
 {
-    ImageMemoryBarrier(const Texture &texture, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkImageLayout oldLayout, VkImageLayout newLayout)
+    ImageMemoryBarrier(const PbrTexture &texture, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkImageLayout oldLayout, VkImageLayout newLayout)
     {
         barrier.srcAccessMask = srcAccessMask;
         barrier.dstAccessMask = dstAccessMask;
@@ -158,17 +158,17 @@ private:
     void DestroyBuffer(Resource<VkBuffer> &buffer) const;
     void DestroyImage(Resource<VkImage> &image) const;
 
-    ModelBuffer CreateModelBuffer(const _Model &model) const;
+    ModelBuffer CreateModelBuffer(const PbrModel &model) const;
     void DestroyModelBuffer(ModelBuffer &model) const;
 
-    MeshBuffer CreateMeshBuffer(const _Mesh &mesh) const;
+    MeshBuffer CreateMeshBuffer(const PbrMesh &mesh) const;
     void DestroyMeshBuffer(MeshBuffer &meshBuffer) const;
 
-    Texture CreateTexture(uint32_t width, uint32_t height, uint32_t layers, VkFormat format, uint32_t levels = 0, VkImageUsageFlags additionUsage = 0) const;
-    Texture CreateTexture(const Image &image, VkFormat format, uint32_t levels = 0) const;
-    VkImageView CreateTextureView(const Texture &texture, VkFormat format, VkImageAspectFlags aspectMask, uint32_t baseMipLevel, uint32_t numMipLevels) const;
-    void GenerateMipmaps(const Texture &texture) const;
-    void DestroyTexture(Texture &texture) const;
+    PbrTexture CreateTexture(uint32_t width, uint32_t height, uint32_t layers, VkFormat format, uint32_t levels = 0, VkImageUsageFlags additionUsage = 0) const;
+    PbrTexture CreateTexture(const Image &image, VkFormat format, uint32_t levels = 0) const;
+    VkImageView CreateTextureView(const PbrTexture &texture, VkFormat format, VkImageAspectFlags aspectMask, uint32_t baseMipLevel, uint32_t numMipLevels) const;
+    void GenerateMipmaps(const PbrTexture &texture) const;
+    void DestroyTexture(PbrTexture &texture) const;
 
     RenderTarget CreateRenderTarget(uint32_t width, uint32_t height, uint32_t samples, VkFormat colorFormat, VkFormat depthFormat) const;
     void DestroyRenderTarget(RenderTarget &rt) const;
@@ -217,11 +217,6 @@ private:
     uint32_t ChooseMemoryType(const VkMemoryRequirements &memoryRequirements, VkMemoryPropertyFlags perferredFlags, VkMemoryPropertyFlags requiredFlags = 0) const;
     bool MemoryTypeNeedsStaging(uint32_t memoryTypeIndex) const;
 
-    std::unique_ptr<Instance> mInstance;
-    std::unique_ptr<Device> mDevice;
-    std::unique_ptr<SwapChain> mSwapChain;
-
-    VkCommandPool mCommandPool;
     VkDescriptorPool mDescriptorPool;
 
     VkRenderPass mRenderPass;
@@ -243,7 +238,7 @@ private:
 
     uint32_t mNumFrames;
     std::vector<VkFramebuffer> mFramebuffers;
-    std::vector<VkCommandBuffer> mCommandBuffers;
+    std::vector<std::unique_ptr<RasterCommandBuffer>> mRasterCommandBuffers;
     std::vector<VkFence> mSubmitFences;
     std::vector<RenderTarget> mRenderTargets;
     std::vector<RenderTarget> mResolveRenderTargets;
@@ -263,11 +258,11 @@ private:
     ModelBuffer mPbrModelBuffer;
     ModelBuffer mSkyboxModelBuffer;
 
-    Texture mAlbedoTexture;
-    Texture mNormalTexture;
-    Texture mMetalnessTexture;
-    Texture mRoughnessTexture;
-    Texture mEnvTexture;
-    Texture mIrradianceTexture;
-    Texture mBrdfLut;
+    PbrTexture mAlbedoTexture;
+    PbrTexture mNormalTexture;
+    PbrTexture mMetalnessTexture;
+    PbrTexture mRoughnessTexture;
+    PbrTexture mEnvTexture;
+    PbrTexture mIrradianceTexture;
+    PbrTexture mBrdfLut;
 };

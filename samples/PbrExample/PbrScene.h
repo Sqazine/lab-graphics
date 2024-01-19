@@ -16,5 +16,5 @@ public:
 
 	float mYaw, mPitch, mRoll;
 	OrbitCamera mCamera;
-	Light mLights[LIGHT_NUM];
+	PbrLight mLights[LIGHT_NUM];
 };

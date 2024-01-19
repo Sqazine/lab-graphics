@@ -4,6 +4,7 @@ file(GLOB MANDELBROT_SET_GENERATE_SRC "MandelbrotSetGenerate/*.h" "MandelbrotSet
 file(GLOB RAYMAN_SRC "Rayman/*.h" "Rayman/*.cpp")
 file(GLOB RAY_TRACING_TRIANGLE_SRC "RayTracingTriangle/*.h" "RayTracingTriangle/*.cpp")
 file(GLOB RAY_TRACING_EXAMPLE_SRC "RayTracingExample/*.h" "RayTracingExample/*.cpp")
+file(GLOB PBR_EXAMPLE_SRC "PbrExample/*.h" "PbrExample/*.cpp")
 
 source_group("src" FILES ${SRC})
 source_group("Sph" FILES ${SPH_SRC})
@@ -11,8 +12,9 @@ source_group("MandelbrotSetGenerate" FILES ${MANDELBROT_SET_GENERATE_SRC})
 source_group("Rayman" FILES ${RAYMAN_SRC})
 source_group("RayTracingTriangle" FILES ${RAY_TRACING_TRIANGLE_SRC})
 source_group("RayTracingExample" FILES ${RAY_TRACING_EXAMPLE_SRC})
+source_group("PbrExample" FILES ${PBR_EXAMPLE_SRC})
 
-add_executable(sample ${SRC} ${SPH_SRC} ${MANDELBROT_SET_GENERATE_SRC} ${RAYMAN_SRC} ${RAY_TRACING_TRIANGLE_SRC} ${RAY_TRACING_EXAMPLE_SRC})
+add_executable(sample ${SRC} ${SPH_SRC} ${MANDELBROT_SET_GENERATE_SRC} ${RAYMAN_SRC} ${RAY_TRACING_TRIANGLE_SRC} ${RAY_TRACING_EXAMPLE_SRC} ${PBR_EXAMPLE_SRC})
 
 target_link_libraries(sample PRIVATE labgraphics)
 target_include_directories(sample PRIVATE ${LIB_GRAPHICS_INC_DIR})

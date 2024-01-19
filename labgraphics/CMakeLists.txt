@@ -1,45 +1,36 @@
-file(GLOB BASE "Base/*.h" "Base/*.cpp")
-file(GLOB PLATFORM "Platform/*.h" "Platform/*.cpp")
 file(GLOB MATH "Math/*.hpp" "Math/*.h" "Math/*.cpp")
 file(GLOB GRAPHICS "Graphics/*.h" "Graphics/*.cpp")
 file(GLOB VK "Graphics/VK/*.h" "Graphics/VK/*.cpp")
 file(GLOB ROOT "*.h" "*.cpp")
 
-source_group("Base" FILES ${BASE})
-source_group("Platform" FILES ${PLATFORM})
 source_group("Math" FILES ${MATH})
 source_group("Graphics" FILES ${GRAPHICS})
 source_group("Graphics/VK" FILES ${VK})
 source_group("" FILES ${ROOT})
 
 
-add_library(labgraphics STATIC ${BASE} 
-                                ${PLATFORM} 
-                                ${MATH}
+add_library(labgraphics STATIC  ${MATH}
                                 ${GRAPHICS} 
                                 ${VK} 
                                 ${ROOT}
                                 )        
 
 target_include_directories(labgraphics PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} 
-                                            ${CMAKE_CURRENT_SOURCE_DIR}/Core
-                                            ${CMAKE_CURRENT_SOURCE_DIR}/Math
-                                            ${CMAKE_CURRENT_SOURCE_DIR}/Platform
-                                            ${CMAKE_CURRENT_SOURCE_DIR}/Graphics
-                                            ${CMAKE_CURRENT_SOURCE_DIR}/Graphics/GL
-                                            ${CMAKE_CURRENT_SOURCE_DIR}/Graphics/VK
-                                            ${VULKAN_INCLUDE_DIR}
-                                            ${THIRD_PARTY_DIR}
-                                            ${SDL_INC_DIR}
-                                            ${SPIRV_HEADERS_INC_DIR}
-                                            ${SPIRV_REFLECT_INC_DIR}
-                                            ${ASSIMP_INC_DIR}
-                                            ${ASSIMP_GENERATE_INC_DIR}
-                                            ${SPDLOG_INC_DIR}
-                                            ${CGLTF_INC_DIR}
-                                            ${STB_INC_DIR}
-                                            ${IMGUI_INC_DIR}
-                                            ${GLAD_INC_DIR}
+                                              ${CMAKE_CURRENT_SOURCE_DIR}/Math
+                                              ${CMAKE_CURRENT_SOURCE_DIR}/Graphics
+                                              ${CMAKE_CURRENT_SOURCE_DIR}/Graphics/VK
+                                              ${VULKAN_INCLUDE_DIR}
+                                              ${THIRD_PARTY_DIR}
+                                              ${SDL_INC_DIR}
+                                              ${SPIRV_HEADERS_INC_DIR}
+                                              ${SPIRV_REFLECT_INC_DIR}
+                                              ${ASSIMP_INC_DIR}
+                                              ${ASSIMP_GENERATE_INC_DIR}
+                                              ${SPDLOG_INC_DIR}
+                                              ${CGLTF_INC_DIR}
+                                              ${STB_INC_DIR}
+                                              ${IMGUI_INC_DIR}
+                                              ${GLAD_INC_DIR}
 )
 
 find_library(vulkan_1

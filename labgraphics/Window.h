@@ -5,7 +5,7 @@
 #include <SDL.h>
 #include <SDL_vulkan.h>
 #include "Math/Vector2.h"
-#include "Platform/Logger.h"
+#include "Logger.h"
 
 #define INIT_SDL_AND_LOAD_VULKAN()                                                    \
     do                                                                                \

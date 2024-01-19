@@ -1,21 +1,12 @@
 #include "Renderer.h"
 #include "labgraphics.h"
-#include "Scene.h"
+#include "PbrScene.h"
 #include <cassert>
 #include <map>
 
 void Renderer::Init(uint32_t maxSamples)
 {
-	std::vector<const char *> instanceLayers;
-#if _DEBUG
-	instanceLayers.emplace_back("VK_LAYER_KHRONOS_validation");
-	instanceLayers.emplace_back("VK_LAYER_LUNARG_monitor");
-#endif
-	mInstance=std::make_unique<Instance>(App::Instance().GetWindow(),instanceLayers);
-	mDevice=std::make_unique<Device>(*mInstance,DeviceFeature::ANISOTROPY_SAMPLER);
-
-	mSwapChain=std::make_unique<SwapChain>(*mDevice);
-
+	
 	const VkFormat colorFormat = VK_FORMAT_R16G16B16A16_SFLOAT;
 	const VkFormat depthFormat = VK_FORMAT_D32_SFLOAT;
 
@@ -26,7 +17,7 @@ void Renderer::Init(uint32_t maxSamples)
 
 	assert(mRenderSamples >= 1);
 
-	mNumFrames=mSwapChain->GetImageViews().size();
+	mNumFrames = App::Instance().GetGraphicsContext()->GetSwapChain()->GetImageViews().size();
 
 	mRenderTargets.resize(mNumFrames);
 	mResolveRenderTargets.resize(mNumFrames);
@@ -39,23 +30,7 @@ void Renderer::Init(uint32_t maxSamples)
 			mResolveRenderTargets[i] = CreateRenderTarget(App::Instance().GetWindow()->GetExtent().x, App::Instance().GetWindow()->GetExtent().y, 1, colorFormat, VK_FORMAT_UNDEFINED);
 	}
 
-	mCommandBuffers.resize(mNumFrames);
-
-	VkCommandPoolCreateInfo poolCreateInfo{};
-	poolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-	poolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-	poolCreateInfo.queueFamilyIndex = mDevice->GetQueueFamilyIndices().graphicsFamily.value();
-
-	VK_CHECK(vkCreateCommandPool(mDevice->GetHandle(), &poolCreateInfo, nullptr, &mCommandPool));
-
-	VkCommandBufferAllocateInfo commandBufferAllocInfo{};
-	commandBufferAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	commandBufferAllocInfo.pNext = nullptr;
-	commandBufferAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	commandBufferAllocInfo.commandBufferCount = mNumFrames;
-	commandBufferAllocInfo.commandPool = mCommandPool;
-
-	VK_CHECK(vkAllocateCommandBuffers(mDevice->GetHandle(), &commandBufferAllocInfo, mCommandBuffers.data()));
+	mRasterCommandBuffers=App::Instance().GetGraphicsContext()->GetDevice()->GetRasterCommandPool()->CreatePrimaryCommandBuffers(mNumFrames);
 
 	mSubmitFences.resize(mNumFrames);
 
@@ -64,14 +39,14 @@ void Renderer::Init(uint32_t maxSamples)
 	fenceCreateInfo.pNext = nullptr;
 	fenceCreateInfo.flags = 0;
 
-	VK_CHECK(vkCreateFence(mDevice->GetHandle(), &fenceCreateInfo, nullptr, &mPresentationFence));
+	VK_CHECK(vkCreateFence(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), &fenceCreateInfo, nullptr, &mPresentationFence));
 	for (auto &fence : mSubmitFences)
-		VK_CHECK(vkCreateFence(mDevice->GetHandle(), &fenceCreateInfo, nullptr, &fence));
+		VK_CHECK(vkCreateFence(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), &fenceCreateInfo, nullptr, &fence));
 
-	VK_CHECK(vkAcquireNextImageKHR(mDevice->GetHandle(), mSwapChain->GetHandle(), UINT64_MAX, VK_NULL_HANDLE, mPresentationFence, &mFrameIndex));
+	VK_CHECK(vkAcquireNextImageKHR(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), App::Instance().GetGraphicsContext()->GetSwapChain()->GetHandle(), UINT64_MAX, VK_NULL_HANDLE, mPresentationFence, &mFrameIndex));
 
-	vkWaitForFences(mDevice->GetHandle(), 1, &mPresentationFence, VK_TRUE, UINT64_MAX);
-	vkResetFences(mDevice->GetHandle(), 1, &mPresentationFence);
+	vkWaitForFences(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), 1, &mPresentationFence, VK_TRUE, UINT64_MAX);
+	vkResetFences(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), 1, &mPresentationFence);
 
 	const std::array<VkDescriptorPoolSize, 3> poolSizes = {{
 		{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16},
@@ -87,7 +62,7 @@ void Renderer::Init(uint32_t maxSamples)
 	descriptorPoolCreateInfo.poolSizeCount = poolSizes.size();
 	descriptorPoolCreateInfo.pPoolSizes = poolSizes.data();
 
-	VK_CHECK(vkCreateDescriptorPool(mDevice->GetHandle(), &descriptorPoolCreateInfo, nullptr, &mDescriptorPool));
+	VK_CHECK(vkCreateDescriptorPool(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), &descriptorPoolCreateInfo, nullptr, &mDescriptorPool));
 
 	mFrameRect = {0, 0, (uint32_t)App::Instance().GetWindow()->GetExtent().x, (uint32_t)App::Instance().GetWindow()->GetExtent().y};
 	mFrameCount = 0;
@@ -135,21 +110,21 @@ void Renderer::Init(uint32_t maxSamples)
 		createInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 		createInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 
-		VK_CHECK(vkCreateSampler(mDevice->GetHandle(), &createInfo, nullptr, &computeSampler));
+		VK_CHECK(vkCreateSampler(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), &createInfo, nullptr, &computeSampler));
 
 		createInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 		createInfo.anisotropyEnable = VK_TRUE;
-		createInfo.maxAnisotropy = mDevice->GetPhysicalProps().limits.maxSamplerAnisotropy;
+		createInfo.maxAnisotropy = App::Instance().GetGraphicsContext()->GetDevice()->GetPhysicalProps().limits.maxSamplerAnisotropy;
 		createInfo.minLod = 0.0f;
 		createInfo.maxLod = FLT_MAX;
 
-		VK_CHECK(vkCreateSampler(mDevice->GetHandle(), &createInfo, nullptr, &mDefaultSampler));
+		VK_CHECK(vkCreateSampler(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), &createInfo, nullptr, &mDefaultSampler));
 
 		createInfo.anisotropyEnable = VK_FALSE;
 		createInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
 		createInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
 
-		VK_CHECK(vkCreateSampler(mDevice->GetHandle(), &createInfo, nullptr, &mSpecularBRDFSampler));
+		VK_CHECK(vkCreateSampler(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), &createInfo, nullptr, &mSpecularBRDFSampler));
 	}
 
 	VkDescriptorPool computeDescriptorPool;
@@ -167,7 +142,7 @@ void Renderer::Init(uint32_t maxSamples)
 		createInfo.poolSizeCount = (uint32_t)poolSizes.size();
 		createInfo.pPoolSizes = poolSizes.data();
 
-		VK_CHECK(vkCreateDescriptorPool(mDevice->GetHandle(), &createInfo, nullptr, &computeDescriptorPool));
+		VK_CHECK(vkCreateDescriptorPool(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), &createInfo, nullptr, &computeDescriptorPool));
 	}
 
 	VkPipelineLayout computePipelineLayout;
@@ -345,7 +320,7 @@ void Renderer::Init(uint32_t maxSamples)
 		createInfo.dependencyCount = 1;
 		createInfo.pDependencies = &mainToTonemapDependency;
 
-		VK_CHECK(vkCreateRenderPass(mDevice->GetHandle(), &createInfo, nullptr, &mRenderPass));
+		VK_CHECK(vkCreateRenderPass(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), &createInfo, nullptr, &mRenderPass));
 	}
 
 	{
@@ -355,7 +330,7 @@ void Renderer::Init(uint32_t maxSamples)
 			std::vector<VkImageView> attachments = {
 				mRenderTargets[i].colorView,
 				mRenderTargets[i].depthView,
-				mSwapChain->GetImageViews()[i]->GetHandle(),
+				App::Instance().GetGraphicsContext()->GetSwapChain()->GetImageViews()[i]->GetHandle(),
 			};
 
 			if (mRenderSamples > 1)
@@ -369,7 +344,7 @@ void Renderer::Init(uint32_t maxSamples)
 			createInfo.height = mFrameRect.extent.height;
 			createInfo.layers = 1;
 
-			VK_CHECK(vkCreateFramebuffer(mDevice->GetHandle(), &createInfo, nullptr, &mFramebuffers[i]));
+			VK_CHECK(vkCreateFramebuffer(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), &createInfo, nullptr, &mFramebuffers[i]));
 		}
 	}
 
@@ -419,7 +394,7 @@ void Renderer::Init(uint32_t maxSamples)
 		}
 	}
 
-	mPbrModelBuffer = CreateModelBuffer(_Model(std::string(ASSETS_DIR) + "meshes/cerberus.glb"));
+	mPbrModelBuffer = CreateModelBuffer(PbrModel(std::string(ASSETS_DIR) + "meshes/cerberus.glb"));
 
 	mAlbedoTexture = CreateTexture(Image(std::string(ASSETS_DIR) + "textures/cerberus_A.png"), VK_FORMAT_R8G8B8A8_SRGB);
 	mNormalTexture = CreateTexture(Image(std::string(ASSETS_DIR) + "textures/cerberus_N.png"), VK_FORMAT_R8G8B8A8_UNORM);
@@ -428,7 +403,7 @@ void Renderer::Init(uint32_t maxSamples)
 
 	{
 		const std::vector<VkVertexInputBindingDescription> vertexInputBindings = {
-			{0, sizeof(_Vertex), VK_VERTEX_INPUT_RATE_VERTEX},
+			{0, sizeof(PbrVertex), VK_VERTEX_INPUT_RATE_VERTEX},
 		};
 
 		const std::vector<VkVertexInputAttributeDescription> vertexAttributes = {
@@ -495,11 +470,11 @@ void Renderer::Init(uint32_t maxSamples)
 		UpdateDescriptorSet(mPbrDescriptorSet, 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, textures);
 	}
 
-	mSkyboxModelBuffer = CreateModelBuffer(_Model(_MeshType::CUBE));
+	mSkyboxModelBuffer = CreateModelBuffer(PbrModel(PbrMeshType::CUBE));
 
 	{
 		const std::vector<VkVertexInputBindingDescription> vertexInputBindings = {
-			{0, sizeof(_Vertex), VK_VERTEX_INPUT_RATE_VERTEX},
+			{0, sizeof(PbrVertex), VK_VERTEX_INPUT_RATE_VERTEX},
 		};
 
 		const std::vector<VkVertexInputAttributeDescription> vertexAttribute = {
@@ -548,7 +523,7 @@ void Renderer::Init(uint32_t maxSamples)
 
 	// Load & pre-process environment map.
 	{
-		Texture envTexture = CreateTexture(kEnvMapSize, kEnvMapSize, 6, VK_FORMAT_R16G16B16A16_SFLOAT, 0, VK_IMAGE_USAGE_STORAGE_BIT);
+		PbrTexture envTexture = CreateTexture(kEnvMapSize, kEnvMapSize, 6, VK_FORMAT_R16G16B16A16_SFLOAT, 0, VK_IMAGE_USAGE_STORAGE_BIT);
 
 		// equirect2cube
 		{
@@ -557,7 +532,7 @@ void Renderer::Init(uint32_t maxSamples)
 
 			VkPipeline compPipeline = CreateComputePipeline(equirect2cube_comp, computePipelineLayout);
 
-			Texture envTextureEquirect = CreateTexture(Image(std::string(ASSETS_DIR) + "hdr/newport_loft.hdr"), VK_FORMAT_R32G32B32A32_SFLOAT, 1);
+			PbrTexture envTextureEquirect = CreateTexture(Image(std::string(ASSETS_DIR) + "hdr/newport_loft.hdr"), VK_FORMAT_R32G32B32A32_SFLOAT, 1);
 
 			const VkDescriptorImageInfo inputTexture = {VK_NULL_HANDLE, envTextureEquirect.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
 			const VkDescriptorImageInfo outputTexture = {VK_NULL_HANDLE, envTexture.view, VK_IMAGE_LAYOUT_GENERAL};
@@ -578,7 +553,7 @@ void Renderer::Init(uint32_t maxSamples)
 
 			ExecuteImmediateCommandBuffer(commandBuffer);
 
-			vkDestroyPipeline(mDevice->GetHandle(), compPipeline, nullptr);
+			vkDestroyPipeline(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), compPipeline, nullptr);
 			DestroyTexture(envTextureEquirect);
 
 			GenerateMipmaps(envTexture);
@@ -669,8 +644,8 @@ void Renderer::Init(uint32_t maxSamples)
 				ExecuteImmediateCommandBuffer(commandBuffer);
 
 				for (const auto &mipTailView : envTextureMipTailViews)
-					vkDestroyImageView(mDevice->GetHandle(), mipTailView, nullptr);
-				vkDestroyPipeline(mDevice->GetHandle(), compPipeline, nullptr);
+					vkDestroyImageView(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), mipTailView, nullptr);
+				vkDestroyPipeline(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), compPipeline, nullptr);
 				DestroyTexture(envTexture);
 			}
 		}
@@ -700,7 +675,7 @@ void Renderer::Init(uint32_t maxSamples)
 			PipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, {postDispatcher});
 
 			ExecuteImmediateCommandBuffer(commandBuffer);
-			vkDestroyPipeline(mDevice->GetHandle(), compPipeline, nullptr);
+			vkDestroyPipeline(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), compPipeline, nullptr);
 		}
 
 		// brdf map
@@ -725,29 +700,28 @@ void Renderer::Init(uint32_t maxSamples)
 			PipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, {postDispatchBarrier});
 
 			ExecuteImmediateCommandBuffer(commandBuffer);
-			vkDestroyPipeline(mDevice->GetHandle(), compPipeline, nullptr);
+			vkDestroyPipeline(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), compPipeline, nullptr);
 		}
 	}
 
-	vkDestroyDescriptorSetLayout(mDevice->GetHandle(), setLayout.uniforms, nullptr);
-	vkDestroyDescriptorSetLayout(mDevice->GetHandle(), setLayout.pbr, nullptr);
-	vkDestroyDescriptorSetLayout(mDevice->GetHandle(), setLayout.skybox, nullptr);
-	vkDestroyDescriptorSetLayout(mDevice->GetHandle(), setLayout.tonemap, nullptr);
-	vkDestroyDescriptorSetLayout(mDevice->GetHandle(), setLayout.compute, nullptr);
+	vkDestroyDescriptorSetLayout(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), setLayout.uniforms, nullptr);
+	vkDestroyDescriptorSetLayout(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), setLayout.pbr, nullptr);
+	vkDestroyDescriptorSetLayout(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), setLayout.skybox, nullptr);
+	vkDestroyDescriptorSetLayout(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), setLayout.tonemap, nullptr);
+	vkDestroyDescriptorSetLayout(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), setLayout.compute, nullptr);
 
-	vkDestroySampler(mDevice->GetHandle(), computeSampler, nullptr);
-	vkDestroyPipelineLayout(mDevice->GetHandle(), computePipelineLayout, nullptr);
-	vkDestroyDescriptorPool(mDevice->GetHandle(), computeDescriptorPool, nullptr);
+	vkDestroySampler(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), computeSampler, nullptr);
+	vkDestroyPipelineLayout(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), computePipelineLayout, nullptr);
+	vkDestroyDescriptorPool(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), computeDescriptorPool, nullptr);
 }
 
 Renderer::Renderer()
 {
-	
 }
 
 Renderer::~Renderer()
 {
-	mDevice->WaitIdle();
+	App::Instance().GetGraphicsContext()->GetDevice()->WaitIdle();
 
 	DestroyTexture(mEnvTexture);
 	DestroyTexture(mIrradianceTexture);
@@ -763,17 +737,17 @@ Renderer::~Renderer()
 
 	DestroyUniformBuffer(mUniformBuffer);
 
-	vkDestroySampler(mDevice->GetHandle(), mDefaultSampler, nullptr);
-	vkDestroySampler(mDevice->GetHandle(), mSpecularBRDFSampler, nullptr);
+	vkDestroySampler(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), mDefaultSampler, nullptr);
+	vkDestroySampler(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), mSpecularBRDFSampler, nullptr);
 
-	vkDestroyPipelineLayout(mDevice->GetHandle(), mPbrPipelineLayout, nullptr);
-	vkDestroyPipeline(mDevice->GetHandle(), mPbrPipeline, nullptr);
-	vkDestroyPipelineLayout(mDevice->GetHandle(), mSkyboxPipelineLayout, nullptr);
-	vkDestroyPipeline(mDevice->GetHandle(), mSkyboxPipeline, nullptr);
-	vkDestroyPipelineLayout(mDevice->GetHandle(), mToneMapPipelineLayout, nullptr);
-	vkDestroyPipeline(mDevice->GetHandle(), mToneMapPipeline, nullptr);
+	vkDestroyPipelineLayout(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), mPbrPipelineLayout, nullptr);
+	vkDestroyPipeline(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), mPbrPipeline, nullptr);
+	vkDestroyPipelineLayout(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), mSkyboxPipelineLayout, nullptr);
+	vkDestroyPipeline(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), mSkyboxPipeline, nullptr);
+	vkDestroyPipelineLayout(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), mToneMapPipelineLayout, nullptr);
+	vkDestroyPipeline(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), mToneMapPipeline, nullptr);
 
-	vkDestroyRenderPass(mDevice->GetHandle(), mRenderPass, nullptr);
+	vkDestroyRenderPass(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), mRenderPass, nullptr);
 
 	for (uint32_t i = 0; i < mNumFrames; ++i)
 	{
@@ -781,13 +755,12 @@ Renderer::~Renderer()
 		if (mRenderSamples > 1)
 			DestroyRenderTarget(mResolveRenderTargets[i]);
 
-		vkDestroyFramebuffer(mDevice->GetHandle(), mFramebuffers[i], nullptr);
-		vkDestroyFence(mDevice->GetHandle(), mSubmitFences[i], nullptr);
+		vkDestroyFramebuffer(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), mFramebuffers[i], nullptr);
+		vkDestroyFence(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), mSubmitFences[i], nullptr);
 	}
 
-	vkDestroyDescriptorPool(mDevice->GetHandle(), mDescriptorPool, nullptr);
-	vkDestroyCommandPool(mDevice->GetHandle(), mCommandPool, nullptr);
-	vkDestroyFence(mDevice->GetHandle(), mPresentationFence, nullptr);
+	vkDestroyDescriptorPool(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), mDescriptorPool, nullptr);
+	vkDestroyFence(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), mPresentationFence, nullptr);
 }
 void Renderer::Render(const PbrScene &scene)
 {
@@ -799,8 +772,8 @@ void Renderer::Render(const PbrScene &scene)
 
 	Vector3f eyePosition = scene.mCamera.mPosition;
 
-	VkCommandBuffer commandBuffer = mCommandBuffers[mFrameIndex];
-	VkImage swapChainImage = mSwapChain->GetImages()[mFrameIndex];
+	VkCommandBuffer commandBuffer = mRasterCommandBuffers[mFrameIndex]->GetHandle();
+	VkImage swapChainImage = App::Instance().GetGraphicsContext()->GetSwapChain()->GetImages()[mFrameIndex];
 	VkFramebuffer framebuffer = mFramebuffers[mFrameIndex];
 
 	VkDescriptorSet uniformDescriptorSet = mUniformsDescriptorSets[mFrameIndex];
@@ -895,7 +868,7 @@ void Renderer::Render(const PbrScene &scene)
 	VkSubmitInfo submitInfo = {VK_STRUCTURE_TYPE_SUBMIT_INFO};
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &commandBuffer;
-	vkQueueSubmit(mDevice->GetGraphicsQueue()->GetHandle(), 1, &submitInfo, mSubmitFences[mFrameIndex]);
+	vkQueueSubmit(App::Instance().GetGraphicsContext()->GetDevice()->GetGraphicsQueue()->GetHandle(), 1, &submitInfo, mSubmitFences[mFrameIndex]);
 
 	PresentFrame();
 }
@@ -908,17 +881,17 @@ Resource<VkBuffer> Renderer::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags 
 	createInfo.usage = usage;
 	createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-	VK_CHECK(vkCreateBuffer(mDevice->GetHandle(), &createInfo, nullptr, &buffer.handle));
+	VK_CHECK(vkCreateBuffer(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), &createInfo, nullptr, &buffer.handle));
 
 	VkMemoryRequirements memoryRequirements;
-	vkGetBufferMemoryRequirements(mDevice->GetHandle(), buffer.handle, &memoryRequirements);
+	vkGetBufferMemoryRequirements(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), buffer.handle, &memoryRequirements);
 
 	VkMemoryAllocateInfo allocateInfo = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
 	allocateInfo.allocationSize = memoryRequirements.size;
 	allocateInfo.memoryTypeIndex = ChooseMemoryType(memoryRequirements, memoryFlags);
 
-	VK_CHECK(vkAllocateMemory(mDevice->GetHandle(), &allocateInfo, nullptr, &buffer.memory));
-	VK_CHECK(vkBindBufferMemory(mDevice->GetHandle(), buffer.handle, buffer.memory, 0));
+	VK_CHECK(vkAllocateMemory(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), &allocateInfo, nullptr, &buffer.memory));
+	VK_CHECK(vkBindBufferMemory(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), buffer.handle, buffer.memory, 0));
 
 	buffer.allocateSize = allocateInfo.allocationSize;
 	buffer.memoryTypeIndex = allocateInfo.memoryTypeIndex;
@@ -948,17 +921,17 @@ Resource<VkImage> Renderer::CreateImage(uint32_t width, uint32_t height, uint32_
 	createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	createInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-	VK_CHECK(vkCreateImage(mDevice->GetHandle(), &createInfo, nullptr, &image.handle));
+	VK_CHECK(vkCreateImage(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), &createInfo, nullptr, &image.handle));
 
 	VkMemoryRequirements memoryRequirements;
-	vkGetImageMemoryRequirements(mDevice->GetHandle(), image.handle, &memoryRequirements);
+	vkGetImageMemoryRequirements(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), image.handle, &memoryRequirements);
 
 	VkMemoryAllocateInfo allocateInfo = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
 	allocateInfo.allocationSize = memoryRequirements.size;
 	allocateInfo.memoryTypeIndex = ChooseMemoryType(memoryRequirements, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-	VK_CHECK(vkAllocateMemory(mDevice->GetHandle(), &allocateInfo, nullptr, &image.memory));
-	VK_CHECK(vkBindImageMemory(mDevice->GetHandle(), image.handle, image.memory, 0));
+	VK_CHECK(vkAllocateMemory(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), &allocateInfo, nullptr, &image.memory));
+	VK_CHECK(vkBindImageMemory(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), image.handle, image.memory, 0));
 
 	image.allocateSize = allocateInfo.allocationSize;
 	image.memoryTypeIndex = allocateInfo.memoryTypeIndex;
@@ -968,20 +941,20 @@ Resource<VkImage> Renderer::CreateImage(uint32_t width, uint32_t height, uint32_
 void Renderer::DestroyBuffer(Resource<VkBuffer> &buffer) const
 {
 	if (buffer.handle)
-		vkDestroyBuffer(mDevice->GetHandle(), buffer.handle, nullptr);
+		vkDestroyBuffer(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), buffer.handle, nullptr);
 	if (buffer.memory)
-		vkFreeMemory(mDevice->GetHandle(), buffer.memory, nullptr);
+		vkFreeMemory(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), buffer.memory, nullptr);
 	buffer = {};
 }
 void Renderer::DestroyImage(Resource<VkImage> &image) const
 {
 	if (image.handle)
-		vkDestroyImage(mDevice->GetHandle(), image.handle, nullptr);
+		vkDestroyImage(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), image.handle, nullptr);
 	if (image.memory)
-		vkFreeMemory(mDevice->GetHandle(), image.memory, nullptr);
+		vkFreeMemory(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), image.memory, nullptr);
 	image = {};
 }
-ModelBuffer Renderer::CreateModelBuffer(const _Model &model) const
+ModelBuffer Renderer::CreateModelBuffer(const PbrModel &model) const
 {
 	ModelBuffer result;
 
@@ -995,13 +968,13 @@ void Renderer::DestroyModelBuffer(ModelBuffer &model) const
 	for (auto &meshBuffer : model)
 		DestroyMeshBuffer(meshBuffer);
 }
-MeshBuffer Renderer::CreateMeshBuffer(const _Mesh &mesh) const
+MeshBuffer Renderer::CreateMeshBuffer(const PbrMesh &mesh) const
 {
 	MeshBuffer buffer;
 
 	buffer.numElements = mesh.mIndices.size();
 
-	const size_t vertexDataSize = mesh.mVertices.size() * sizeof(_Vertex);
+	const size_t vertexDataSize = mesh.mVertices.size() * sizeof(PbrVertex);
 	const size_t indexDataSize = mesh.mIndices.size() * sizeof(uint32_t);
 
 	buffer.vertexBuffer = CreateBuffer(vertexDataSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
@@ -1060,12 +1033,12 @@ void Renderer::DestroyMeshBuffer(MeshBuffer &meshBuffer) const
 	DestroyBuffer(meshBuffer.indexBuffer);
 	meshBuffer = {};
 }
-Texture Renderer::CreateTexture(uint32_t width, uint32_t height, uint32_t layers, VkFormat format, uint32_t levels, VkImageUsageFlags additionUsage) const
+PbrTexture Renderer::CreateTexture(uint32_t width, uint32_t height, uint32_t layers, VkFormat format, uint32_t levels, VkImageUsageFlags additionUsage) const
 {
 	assert(width > 0 && height > 0);
 	assert(layers > 0);
 
-	Texture texture;
+	PbrTexture texture;
 	texture.width = width;
 	texture.height = height;
 	texture.layers = layers;
@@ -1080,9 +1053,9 @@ Texture Renderer::CreateTexture(uint32_t width, uint32_t height, uint32_t layers
 
 	return texture;
 }
-Texture Renderer::CreateTexture(const Image &image, VkFormat format, uint32_t levels) const
+PbrTexture Renderer::CreateTexture(const Image &image, VkFormat format, uint32_t levels) const
 {
-	Texture texture = CreateTexture(image.mWidth, image.mHeight, 1, format, levels);
+	PbrTexture texture = CreateTexture(image.mWidth, image.mHeight, 1, format, levels);
 
 	const size_t pixelDataSize = image.mWidth * image.mHeight * image.BytesPerPixel();
 
@@ -1117,7 +1090,7 @@ Texture Renderer::CreateTexture(const Image &image, VkFormat format, uint32_t le
 		GenerateMipmaps(texture);
 	return texture;
 }
-VkImageView Renderer::CreateTextureView(const Texture &texture, VkFormat format, VkImageAspectFlags aspectMask, uint32_t baseMipLevel, uint32_t numMipLevels) const
+VkImageView Renderer::CreateTextureView(const PbrTexture &texture, VkFormat format, VkImageAspectFlags aspectMask, uint32_t baseMipLevel, uint32_t numMipLevels) const
 {
 	VkImageViewCreateInfo viewCreateInfo = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
 	viewCreateInfo.image = texture.image.handle;
@@ -1130,11 +1103,11 @@ VkImageView Renderer::CreateTextureView(const Texture &texture, VkFormat format,
 	viewCreateInfo.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
 
 	VkImageView view;
-	VK_CHECK(vkCreateImageView(mDevice->GetHandle(), &viewCreateInfo, nullptr, &view));
+	VK_CHECK(vkCreateImageView(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), &viewCreateInfo, nullptr, &view));
 
 	return view;
 }
-void Renderer::GenerateMipmaps(const Texture &texture) const
+void Renderer::GenerateMipmaps(const PbrTexture &texture) const
 {
 	assert(texture.levels > 1);
 
@@ -1171,10 +1144,10 @@ void Renderer::GenerateMipmaps(const Texture &texture) const
 
 	ExecuteImmediateCommandBuffer(commandBuffer);
 }
-void Renderer::DestroyTexture(Texture &texture) const
+void Renderer::DestroyTexture(PbrTexture &texture) const
 {
 	if (texture.view)
-		vkDestroyImageView(mDevice->GetHandle(), texture.view, nullptr);
+		vkDestroyImageView(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), texture.view, nullptr);
 	DestroyImage(texture.image);
 }
 RenderTarget Renderer::CreateRenderTarget(uint32_t width, uint32_t height, uint32_t samples, VkFormat colorFormat, VkFormat depthFormat) const
@@ -1210,7 +1183,7 @@ RenderTarget Renderer::CreateRenderTarget(uint32_t width, uint32_t height, uint3
 		viewCreateInfo.format = colorFormat;
 		viewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 
-		VK_CHECK(vkCreateImageView(mDevice->GetHandle(), &viewCreateInfo, nullptr, &target.colorView));
+		VK_CHECK(vkCreateImageView(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), &viewCreateInfo, nullptr, &target.colorView));
 	}
 
 	if (target.depthImage.handle)
@@ -1219,7 +1192,7 @@ RenderTarget Renderer::CreateRenderTarget(uint32_t width, uint32_t height, uint3
 		viewCreateInfo.format = depthFormat;
 		viewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
 
-		VK_CHECK(vkCreateImageView(mDevice->GetHandle(), &viewCreateInfo, nullptr, &target.depthView));
+		VK_CHECK(vkCreateImageView(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), &viewCreateInfo, nullptr, &target.depthView));
 	}
 
 	return target;
@@ -1230,10 +1203,10 @@ void Renderer::DestroyRenderTarget(RenderTarget &rt) const
 	DestroyImage(rt.depthImage);
 
 	if (rt.colorView)
-		vkDestroyImageView(mDevice->GetHandle(), rt.colorView, nullptr);
+		vkDestroyImageView(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), rt.colorView, nullptr);
 
 	if (rt.depthView)
-		vkDestroyImageView(mDevice->GetHandle(), rt.depthView, nullptr);
+		vkDestroyImageView(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), rt.depthView, nullptr);
 
 	rt = {};
 }
@@ -1245,22 +1218,22 @@ UniformBufferWrap Renderer::CreateUniformBuffer(VkDeviceSize capacity) const
 	ubo.buffer = CreateBuffer(capacity, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 	ubo.capacity = capacity;
 
-	VK_CHECK(vkMapMemory(mDevice->GetHandle(), ubo.buffer.memory, 0, VK_WHOLE_SIZE, 0, &ubo.hostMemoryPtr));
+	VK_CHECK(vkMapMemory(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), ubo.buffer.memory, 0, VK_WHOLE_SIZE, 0, &ubo.hostMemoryPtr));
 
 	return ubo;
 }
 void Renderer::DestroyUniformBuffer(UniformBufferWrap &uniformBuffer) const
 {
 	if (uniformBuffer.hostMemoryPtr && uniformBuffer.buffer.memory)
-		vkUnmapMemory(mDevice->GetHandle(), uniformBuffer.buffer.memory);
+		vkUnmapMemory(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), uniformBuffer.buffer.memory);
 	DestroyBuffer(uniformBuffer.buffer);
 	uniformBuffer = {};
 }
 UniformBufferWrapAllocation Renderer::AllocFromUniformBuffer(UniformBufferWrap &buffer, VkDeviceSize size) const
 {
-	const VkDeviceSize minAlignment = mDevice->GetPhysicalProps().limits.minUniformBufferOffsetAlignment;
+	const VkDeviceSize minAlignment = App::Instance().GetGraphicsContext()->GetDevice()->GetPhysicalProps().limits.minUniformBufferOffsetAlignment;
 	const VkDeviceSize alignedSize = Math::RoundToPowerOfTwo(size, minAlignment);
-	if (alignedSize > mDevice->GetPhysicalProps().limits.maxUniformBufferRange)
+	if (alignedSize > App::Instance().GetGraphicsContext()->GetDevice()->GetPhysicalProps().limits.maxUniformBufferRange)
 		throw std::invalid_argument("Requested uniform buffer sub-allocation size exceeds maxUniformBufferRange of current physical device");
 
 	if (buffer.cursor + alignedSize > buffer.capacity)
@@ -1282,7 +1255,7 @@ VkDescriptorSet Renderer::AllocateDescriptorSet(VkDescriptorPool pool, VkDescrip
 	allocateInfo.descriptorPool = pool;
 	allocateInfo.descriptorSetCount = 1;
 	allocateInfo.pSetLayouts = &layout;
-	vkAllocateDescriptorSets(mDevice->GetHandle(), &allocateInfo, &descriptorSet);
+	vkAllocateDescriptorSets(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), &allocateInfo, &descriptorSet);
 	return descriptorSet;
 }
 void Renderer::UpdateDescriptorSet(VkDescriptorSet dstSet, uint32_t dstBinding, VkDescriptorType descriptorType, const std::vector<VkDescriptorImageInfo> &descriptors) const
@@ -1294,7 +1267,7 @@ void Renderer::UpdateDescriptorSet(VkDescriptorSet dstSet, uint32_t dstBinding, 
 	writeDescriptorSet.descriptorCount = descriptors.size();
 	writeDescriptorSet.pImageInfo = descriptors.data();
 
-	vkUpdateDescriptorSets(mDevice->GetHandle(), 1, &writeDescriptorSet, 0, nullptr);
+	vkUpdateDescriptorSets(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), 1, &writeDescriptorSet, 0, nullptr);
 }
 
 void Renderer::UpdateDescriptorSet(VkDescriptorSet dstSet, uint32_t dstBinding, VkDescriptorType descriptorType, const std::vector<VkDescriptorBufferInfo> &descriptors) const
@@ -1306,7 +1279,7 @@ void Renderer::UpdateDescriptorSet(VkDescriptorSet dstSet, uint32_t dstBinding, 
 	writeDescriptorSet.descriptorCount = descriptors.size();
 	writeDescriptorSet.pBufferInfo = descriptors.data();
 
-	vkUpdateDescriptorSets(mDevice->GetHandle(), 1, &writeDescriptorSet, 0, nullptr);
+	vkUpdateDescriptorSets(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), 1, &writeDescriptorSet, 0, nullptr);
 }
 
 VkDescriptorSetLayout Renderer::CreateDescriptorSetLayout(const std::vector<VkDescriptorSetLayoutBinding> *bindings) const
@@ -1319,7 +1292,7 @@ VkDescriptorSetLayout Renderer::CreateDescriptorSetLayout(const std::vector<VkDe
 		createInfo.pBindings = bindings->data();
 	}
 
-	VK_CHECK(vkCreateDescriptorSetLayout(mDevice->GetHandle(), &createInfo, nullptr, &layout));
+	VK_CHECK(vkCreateDescriptorSetLayout(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), &createInfo, nullptr, &layout));
 	return layout;
 }
 VkPipelineLayout Renderer::CreatePipelineLayout(const std::vector<VkDescriptorSetLayout> *setLayouts, const std::vector<VkPushConstantRange> *pushConstants) const
@@ -1339,7 +1312,7 @@ VkPipelineLayout Renderer::CreatePipelineLayout(const std::vector<VkDescriptorSe
 		createInfo.pPushConstantRanges = pushConstants->data();
 	}
 
-	VK_CHECK(vkCreatePipelineLayout(mDevice->GetHandle(), &createInfo, nullptr, &layout));
+	VK_CHECK(vkCreatePipelineLayout(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), &createInfo, nullptr, &layout));
 
 	return layout;
 }
@@ -1424,10 +1397,10 @@ VkPipeline Renderer::CreateGraphicsPipeline(uint32_t subpass, const std::vector<
 	pipelineCreateInfo.subpass = subpass;
 
 	VkPipeline pipeline;
-	VK_CHECK(vkCreateGraphicsPipelines(mDevice->GetHandle(), VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &pipeline));
+	VK_CHECK(vkCreateGraphicsPipelines(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &pipeline));
 
-	vkDestroyShaderModule(mDevice->GetHandle(), vertexShader, nullptr);
-	vkDestroyShaderModule(mDevice->GetHandle(), fragmentShader, nullptr);
+	vkDestroyShaderModule(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), vertexShader, nullptr);
+	vkDestroyShaderModule(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), fragmentShader, nullptr);
 
 	return pipeline;
 }
@@ -1449,9 +1422,9 @@ VkPipeline Renderer::CreateComputePipeline(const std::vector<uint32_t> &cs, VkPi
 	createInfo.layout = layout;
 
 	VkPipeline pipeline;
-	VK_CHECK(vkCreateComputePipelines(mDevice->GetHandle(), VK_NULL_HANDLE, 1, &createInfo, nullptr, &pipeline));
+	VK_CHECK(vkCreateComputePipelines(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), VK_NULL_HANDLE, 1, &createInfo, nullptr, &pipeline));
 
-	vkDestroyShaderModule(mDevice->GetHandle(), computeShader, nullptr);
+	vkDestroyShaderModule(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), computeShader, nullptr);
 
 	return pipeline;
 }
@@ -1464,7 +1437,7 @@ VkShaderModule Renderer::CreateShaderModuleFromSPV(const std::vector<uint32_t> &
 	createInfo.pCode = spvCode.data();
 
 	VkShaderModule shaderModule = VK_NULL_HANDLE;
-	VK_CHECK(vkCreateShaderModule(mDevice->GetHandle(), &createInfo, nullptr, &shaderModule));
+	VK_CHECK(vkCreateShaderModule(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), &createInfo, nullptr, &shaderModule));
 
 	return shaderModule;
 }
@@ -1472,8 +1445,8 @@ VkCommandBuffer Renderer::BeginImmediateCommandBuffer() const
 {
 	VkCommandBufferBeginInfo beginInfo = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
 	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-	VK_CHECK(vkBeginCommandBuffer(mCommandBuffers[mFrameIndex], &beginInfo))
-	return mCommandBuffers[mFrameIndex];
+	VK_CHECK(vkBeginCommandBuffer(mRasterCommandBuffers[mFrameIndex]->GetHandle(), &beginInfo))
+	return mRasterCommandBuffers[mFrameIndex]->GetHandle();
 }
 void Renderer::ExecuteImmediateCommandBuffer(VkCommandBuffer commandBuffer) const
 {
@@ -1482,8 +1455,8 @@ void Renderer::ExecuteImmediateCommandBuffer(VkCommandBuffer commandBuffer) cons
 	VkSubmitInfo submitInfo = {VK_STRUCTURE_TYPE_SUBMIT_INFO};
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &commandBuffer;
-	vkQueueSubmit(mDevice->GetGraphicsQueue()->GetHandle(), 1, &submitInfo, VK_NULL_HANDLE);
-	mDevice->GetGraphicsQueue()->WaitIdle();
+	vkQueueSubmit(App::Instance().GetGraphicsContext()->GetDevice()->GetGraphicsQueue()->GetHandle(), 1, &submitInfo, VK_NULL_HANDLE);
+	App::Instance().GetGraphicsContext()->GetDevice()->GetGraphicsQueue()->WaitIdle();
 
 	VK_CHECK(vkResetCommandBuffer(commandBuffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT));
 }
@@ -1497,11 +1470,11 @@ void Renderer::CopyToDevice(VkDeviceMemory deviceMemory, const void *data, size_
 		VK_WHOLE_SIZE};
 
 	void *mappedMemory;
-	VK_CHECK(vkMapMemory(mDevice->GetHandle(), deviceMemory, 0, VK_WHOLE_SIZE, 0, &mappedMemory));
+	VK_CHECK(vkMapMemory(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), deviceMemory, 0, VK_WHOLE_SIZE, 0, &mappedMemory));
 
 	std::memcpy(mappedMemory, data, size);
-	vkFlushMappedMemoryRanges(mDevice->GetHandle(), 1, &flushRange);
-	vkUnmapMemory(mDevice->GetHandle(), deviceMemory);
+	vkFlushMappedMemoryRanges(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), 1, &flushRange);
+	vkUnmapMemory(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), deviceMemory);
 }
 void Renderer::PipelineBarrier(VkCommandBuffer commandBuffer, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, const std::vector<ImageMemoryBarrier> &barriers) const
 {
@@ -1513,14 +1486,14 @@ void Renderer::PresentFrame()
 
 	VkPresentInfoKHR presentInfo = {VK_STRUCTURE_TYPE_PRESENT_INFO_KHR};
 	presentInfo.swapchainCount = 1;
-	presentInfo.pSwapchains = &mSwapChain->GetHandle();
+	presentInfo.pSwapchains = &App::Instance().GetGraphicsContext()->GetSwapChain()->GetHandle();
 	presentInfo.pImageIndices = &mFrameIndex;
 	presentInfo.pResults = &presentResult;
 
-	VK_CHECK(vkQueuePresentKHR(mDevice->GetGraphicsQueue()->GetHandle(), &presentInfo));
+	VK_CHECK(vkQueuePresentKHR(App::Instance().GetGraphicsContext()->GetDevice()->GetGraphicsQueue()->GetHandle(), &presentInfo));
 	VK_CHECK(presentResult);
 
-	VK_CHECK(vkAcquireNextImageKHR(mDevice->GetHandle(), mSwapChain->GetHandle(), UINT64_MAX, VK_NULL_HANDLE, mPresentationFence, &mFrameIndex));
+	VK_CHECK(vkAcquireNextImageKHR(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), App::Instance().GetGraphicsContext()->GetSwapChain()->GetHandle(), UINT64_MAX, VK_NULL_HANDLE, mPresentationFence, &mFrameIndex));
 
 	const VkFence fences[] = {
 		mPresentationFence,
@@ -1528,8 +1501,8 @@ void Renderer::PresentFrame()
 	};
 
 	const uint32_t numFencesToWaitFor = (mFrameCount < mFrameIndex) ? 1 : 2;
-	vkWaitForFences(mDevice->GetHandle(), numFencesToWaitFor, fences, VK_TRUE, UINT64_MAX);
-	vkResetFences(mDevice->GetHandle(), numFencesToWaitFor, fences);
+	vkWaitForFences(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), numFencesToWaitFor, fences, VK_TRUE, UINT64_MAX);
+	vkResetFences(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), numFencesToWaitFor, fences);
 
 	++mFrameCount;
 }
@@ -1537,7 +1510,7 @@ void Renderer::PresentFrame()
 uint32_t Renderer::QueryRenderTargetFormatMaxSamples(VkFormat format, VkImageUsageFlags usage) const
 {
 	VkImageFormatProperties properties;
-	VK_CHECK(vkGetPhysicalDeviceImageFormatProperties(mDevice->GetPhysicalHandle(), format, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, usage, 0, &properties))
+	VK_CHECK(vkGetPhysicalDeviceImageFormatProperties(App::Instance().GetGraphicsContext()->GetDevice()->GetPhysicalHandle(), format, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, usage, 0, &properties))
 
 	for (VkSampleCountFlags maxSampleCount = VK_SAMPLE_COUNT_64_BIT; maxSampleCount > VK_SAMPLE_COUNT_1_BIT; maxSampleCount >>= 1)
 		if (properties.sampleCounts & maxSampleCount)
@@ -1550,15 +1523,15 @@ uint32_t Renderer::ChooseMemoryType(const VkMemoryRequirements &memoryRequiremen
 	if (requiredFlags == 0)
 		requiredFlags = perferredFlags;
 
-	uint32_t memoryType = mDevice->FindMemoryType(memoryRequirements.memoryTypeBits,perferredFlags);
+	uint32_t memoryType = App::Instance().GetGraphicsContext()->GetDevice()->FindMemoryType(memoryRequirements.memoryTypeBits, perferredFlags);
 
 	if (memoryType == -1 && requiredFlags != perferredFlags)
-		memoryType = mDevice->FindMemoryType(memoryRequirements.memoryTypeBits,perferredFlags);
+		memoryType = App::Instance().GetGraphicsContext()->GetDevice()->FindMemoryType(memoryRequirements.memoryTypeBits, perferredFlags);
 	return memoryType;
 }
 bool Renderer::MemoryTypeNeedsStaging(uint32_t memoryTypeIndex) const
 {
-	assert(memoryTypeIndex < mDevice->GetPhysicalMemoryProps().memoryTypeCount);
-	const VkMemoryPropertyFlags flags = mDevice->GetPhysicalMemoryProps().memoryTypes[memoryTypeIndex].propertyFlags;
+	assert(memoryTypeIndex < App::Instance().GetGraphicsContext()->GetDevice()->GetPhysicalMemoryProps().memoryTypeCount);
+	const VkMemoryPropertyFlags flags = App::Instance().GetGraphicsContext()->GetDevice()->GetPhysicalMemoryProps().memoryTypes[memoryTypeIndex].propertyFlags;
 	return (flags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) == 0;
 }

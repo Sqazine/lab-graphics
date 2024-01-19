@@ -1,5 +1,5 @@
 #include "SoftRayTracingScene.h"
-#include "Base/App.h"
+#include "App.h"
 
 #undef main
 int main(int argc, char** argv)

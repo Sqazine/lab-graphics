@@ -1,5 +1,5 @@
 #include "SceneRayTraceTriangle.h"
-#include "Base/App.h"
+#include "App.h"
 void SceneRayTraceTriangle::Init()
 {
 	// create bottom-level container

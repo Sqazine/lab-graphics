@@ -6,11 +6,10 @@
 #include "VK/Framebuffer.h"
 
 const std::vector<const char *> gInstanceExtensions = {
-    #ifdef _DEBUG
+#ifdef _DEBUG
     VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
 #endif
-    VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME
-    };
+    VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME};
 
 const std::vector<const char *> gValidationLayers = {
     "VK_LAYER_KHRONOS_validation",
@@ -31,5 +30,4 @@ private:
     std::unique_ptr<Device> mDevice;
 
     std::unique_ptr<SwapChain> mSwapChain;
- 
 };

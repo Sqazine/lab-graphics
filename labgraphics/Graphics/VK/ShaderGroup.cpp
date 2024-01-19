@@ -1,5 +1,5 @@
 #include "ShaderGroup.h"
-#include "Platform/Logger.h"
+#include "Logger.h"
 void RasterShaderGroup::SetVertexShader(Shader *shader)
 {
     mVertexShader.reset(shader);
@@ -33,6 +33,8 @@ std::vector<VkPipelineShaderStageCreateInfo> RasterShaderGroup::GetShaderStages(
     if (!mFragmentShader)
         LOG_ERROR("Fragment shader is necessary in rasterization");
 
+    CheckLink();
+
     std::vector<VkPipelineShaderStageCreateInfo> result;
 
     result.emplace_back(mVertexShader->GetPipelineStageInfo());
@@ -47,12 +49,14 @@ std::vector<VkPipelineShaderStageCreateInfo> RasterShaderGroup::GetShaderStages(
         result.emplace_back(mGeometryShader->GetPipelineStageInfo());
 
     result.emplace_back(mFragmentShader->GetPipelineStageInfo());
-
+    
     return result;
 }
 
 bool RasterShaderGroup::CheckLink()
 {
+    auto vertReflData=mVertexShader->GetReflectedData();
+    auto fragReflData=mFragmentShader->GetReflectedData();
     return true;
 }
 
@@ -62,6 +66,7 @@ void ComputeShaderGroup::SetShader(Shader *shader)
 }
 std::vector<VkPipelineShaderStageCreateInfo> ComputeShaderGroup::GetShaderStages()
 {
+    CheckLink();
     return {mCompShader->GetPipelineStageInfo()};
 }
 

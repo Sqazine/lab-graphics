@@ -2,7 +2,7 @@
 #include "labgraphics.h"
 #include <stb/stb_image_write.h>
 #include <iostream>
-#include "Base/App.h"
+#include "App.h"
 void SceneMandelbrotSetGen::Init()
 {
     mWindowExtent = App::Instance().GetWindow()->GetExtent();
@@ -81,36 +81,20 @@ void SceneMandelbrotSetGen::Init()
 
     mRasterPipeline->pColorBlendState = colorBlendStateInfo;
 
-    mRasterCommandBuffers = App::Instance().GetGraphicsContext()->GetDevice()->GetRasterCommandPool()->CreatePrimaryCommandBuffers(App::Instance().GetGraphicsContext()->GetSwapChain()->GetDefaultFrameBuffers().size());
-
-    mImageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    mRenderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    mInFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
-    mImagesInFlight.resize(App::Instance().GetGraphicsContext()->GetSwapChain()->GetImages().size(), nullptr);
-
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
-    {
-        mImageAvailableSemaphores[i] = App::Instance().GetGraphicsContext()->GetDevice()->CreateSemaphore();
-        mRenderFinishedSemaphores[i] = App::Instance().GetGraphicsContext()->GetDevice()->CreateSemaphore();
-        mInFlightFences[i] = App::Instance().GetGraphicsContext()->GetDevice()->CreateFence(FenceStatus::SIGNALED);
-    }
-
-    for (size_t i = 0; i < mRasterCommandBuffers.size(); ++i)
-    {
-        mRasterCommandBuffers[i]->Record([&]()
-                                         {
-                                             mRasterCommandBuffers[i]->BeginRenderPass(App::Instance().GetGraphicsContext()->GetSwapChain()->GetDefaultRenderPass()->GetHandle(),
-                                                                                       App::Instance().GetGraphicsContext()->GetSwapChain()->GetDefaultFrameBuffers()[i]->GetHandle(),
-                                                                                       App::Instance().GetGraphicsContext()->GetSwapChain()->GetRenderArea(),
-                                                                                       {VkClearValue{0.0f, 0.0f, 0.0f, 1.0f}},
-                                                                                       VK_SUBPASS_CONTENTS_INLINE);
-                                             mRasterCommandBuffers[i]->BindDescriptorSets(mPipelineLayout.get(), 0, {mDescriptorSet});
-                                             mRasterCommandBuffers[i]->SetViewport(mRasterPipeline->GetViewport(0));
-                                             mRasterCommandBuffers[i]->BindPipeline(mRasterPipeline.get());
-                                             mRasterCommandBuffers[i]->Draw(3, 1, 0, 0);
-                                             mRasterCommandBuffers[i]->EndRenderPass();
-                                         });
-    }
+    mRasterPass = std::make_unique<RasterPass>();
+    mRasterPass->RecordCommand([&](RasterCommandBuffer *rasterCmd, uint32_t frameIdx)
+                               {
+                                   rasterCmd->BeginRenderPass(App::Instance().GetGraphicsContext()->GetSwapChain()->GetDefaultRenderPass()->GetHandle(),
+                                                              App::Instance().GetGraphicsContext()->GetSwapChain()->GetDefaultFrameBuffers()[frameIdx]->GetHandle(),
+                                                              App::Instance().GetGraphicsContext()->GetSwapChain()->GetRenderArea(),
+                                                              {VkClearValue{0.0f, 0.0f, 0.0f, 1.0f}},
+                                                              VK_SUBPASS_CONTENTS_INLINE);
+                                   rasterCmd->BindDescriptorSets(mPipelineLayout.get(), 0, {mDescriptorSet});
+                                   rasterCmd->SetViewport(mRasterPipeline->GetViewport(0));
+                                   rasterCmd->BindPipeline(mRasterPipeline.get());
+                                   rasterCmd->Draw(3, 1, 0, 0);
+                                   rasterCmd->EndRenderPass();
+                               });
 }
 
 void SceneMandelbrotSetGen::Update()
@@ -119,17 +103,5 @@ void SceneMandelbrotSetGen::Update()
 
 void SceneMandelbrotSetGen::Render()
 {
-    uint32_t swapChainImageIdx = App::Instance().GetGraphicsContext()->GetSwapChain()->AcquireNextImage(mImageAvailableSemaphores[currentFrame].get());
-
-    if (mImagesInFlight[swapChainImageIdx] != nullptr)
-        mImagesInFlight[swapChainImageIdx]->Wait(VK_TRUE, UINT64_MAX);
-    mImagesInFlight[swapChainImageIdx] = mInFlightFences[currentFrame].get();
-
-    mInFlightFences[currentFrame]->Reset();
-
-    mRasterCommandBuffers[swapChainImageIdx]->Submit({PipelineStage::COLOR_ATTACHMENT_OUTPUT}, {mImageAvailableSemaphores[currentFrame].get()}, {mRenderFinishedSemaphores[currentFrame].get()}, mInFlightFences[currentFrame].get());
-    mRasterCommandBuffers[swapChainImageIdx]->Present(swapChainImageIdx, {mRenderFinishedSemaphores[currentFrame].get()});
-    App::Instance().GetGraphicsContext()->GetDevice()->GetPresentQueue()->WaitIdle();
-
-    currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+    mRasterPass->Render();
 }

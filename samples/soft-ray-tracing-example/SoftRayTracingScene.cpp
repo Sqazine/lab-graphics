@@ -1,6 +1,6 @@
 #include "SoftRayTracingScene.h"
 #include "VK/Utils.h"
-#include "Base/App.h"
+#include "App.h"
 #include <iostream>
 #ifdef _DEBUG
 VKAPI_ATTR VkBool32 VKAPI_CALL LogMessage(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,

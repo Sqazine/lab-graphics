@@ -1,17 +1,17 @@
 #include "Mesh.h"
 #include <cgltf/cgltf.h>
 
-_Model::_Model(_MeshType type)
+PbrModel::PbrModel(PbrMeshType type)
 {
     switch (type)
     {
-    case _MeshType::QUAD:
+    case PbrMeshType::QUAD:
         CreateBuiltInQuad();
         break;
-    case _MeshType::CUBE:
+    case PbrMeshType::CUBE:
         CreateBuiltInCube();
         break;
-    case _MeshType::SPHERE:
+    case PbrMeshType::SPHERE:
         CreateBuiltInSphere();
         break;
     default:
@@ -20,14 +20,14 @@ _Model::_Model(_MeshType type)
     }
 }
 
-_Model::_Model(std::string_view filePath)
+PbrModel::PbrModel(std::string_view filePath)
 {
     auto cgltfData = LoadGLTFFile(filePath);
     LoadMeshes(cgltfData);
     FreeGLTFFile(cgltfData);
 }
 
-cgltf_data *_Model::LoadGLTFFile(std::string_view path)
+cgltf_data *PbrModel::LoadGLTFFile(std::string_view path)
 {
     cgltf_options options;
     memset(&options, 0, sizeof(cgltf_options));
@@ -54,7 +54,7 @@ cgltf_data *_Model::LoadGLTFFile(std::string_view path)
     }
     return data;
 }
-void _Model::FreeGLTFFile(cgltf_data *data)
+void PbrModel::FreeGLTFFile(cgltf_data *data)
 {
     if (!data)
         std::cout << "WARNING:Can't free null data" << std::endl;
@@ -62,7 +62,7 @@ void _Model::FreeGLTFFile(cgltf_data *data)
         cgltf_free(data);
 }
 
-Matrix4f _Model::GetMeshLocalModelMatrix(const cgltf_node &n)
+Matrix4f PbrModel::GetMeshLocalModelMatrix(const cgltf_node &n)
 {
     Matrix4f mat4(n.matrix[0], n.matrix[1], n.matrix[2], n.matrix[3],
                   n.matrix[4], n.matrix[5], n.matrix[6], n.matrix[7],
@@ -71,7 +71,7 @@ Matrix4f _Model::GetMeshLocalModelMatrix(const cgltf_node &n)
     return mat4;
 }
 
-int32_t _Model::GetNodeIndex(cgltf_node *target, cgltf_node *allNodes, uint32_t numNodes)
+int32_t PbrModel::GetNodeIndex(cgltf_node *target, cgltf_node *allNodes, uint32_t numNodes)
 {
     if (target == 0)
         return -1;
@@ -84,7 +84,7 @@ int32_t _Model::GetNodeIndex(cgltf_node *target, cgltf_node *allNodes, uint32_t 
     return -1;
 }
 
-std::vector<float> _Model::GetScalarValues(uint32_t compCount, const cgltf_accessor &inAccessor)
+std::vector<float> PbrModel::GetScalarValues(uint32_t compCount, const cgltf_accessor &inAccessor)
 {
     std::vector<float> out;
     out.resize(inAccessor.count * compCount);
@@ -93,7 +93,7 @@ std::vector<float> _Model::GetScalarValues(uint32_t compCount, const cgltf_acces
     return out;
 }
 
-void _Model::LoadMeshes(cgltf_data *data)
+void PbrModel::LoadMeshes(cgltf_data *data)
 {
     cgltf_node *nodes = data->nodes;
     uint32_t nodeCount = data->nodes_count;
@@ -104,7 +104,7 @@ void _Model::LoadMeshes(cgltf_data *data)
             continue;
         int numPrims = node.mesh->primitives_count;
 
-        _Mesh mesh;
+        PbrMesh mesh;
         for (int j = 0; j < numPrims; ++j)
         {
             cgltf_primitive primitive = node.mesh->primitives[j];
@@ -154,7 +154,7 @@ void _Model::LoadMeshes(cgltf_data *data)
             }
             for (int32_t i = 0; i < positions.size(); ++i)
             {
-                _Vertex v;
+                PbrVertex v;
                 v.position = positions[i];
                 v.normal = normals[i];
                 v.texcoord = texcoords[i];
@@ -170,14 +170,14 @@ void _Model::LoadMeshes(cgltf_data *data)
         }
 
         auto localModelMat = GetMeshLocalModelMatrix(node);
-        MeshInstance meshInstance;
+        PbrMeshInstance meshInstance;
         meshInstance.mesh = mesh;
         meshInstance.modelMat=localModelMat;
         mMeshInstances.emplace_back(meshInstance);
     }
 }
 
-void _Model::CreateBuiltInQuad()
+void PbrModel::CreateBuiltInQuad()
 {
     std::vector<Vector3f> positions =
         {
@@ -210,10 +210,10 @@ void _Model::CreateBuiltInQuad()
             0, 1, 2,
             0, 2, 3};
 
-    _Mesh mesh;
+    PbrMesh mesh;
     for (int32_t i = 0; i < 4; ++i)
     {
-        _Vertex v;
+        PbrVertex v;
         v.position = positions[i];
         v.normal = normals[i];
         v.texcoord = texcoords[i];
@@ -222,12 +222,12 @@ void _Model::CreateBuiltInQuad()
 
     mesh.mIndices = indices;
 
-    MeshInstance instance;
+    PbrMeshInstance instance;
     instance.mesh = mesh;
 
     mMeshInstances.emplace_back(instance);
 }
-void _Model::CreateBuiltInCube()
+void PbrModel::CreateBuiltInCube()
 {
     std::vector<Vector3f> positions =
         {
@@ -410,10 +410,10 @@ void _Model::CreateBuiltInCube()
             23,
         };
 
-    _Mesh mesh;
+    PbrMesh mesh;
     for (int32_t i = 0; i < 24; ++i)
     {
-        _Vertex v;
+        PbrVertex v;
         v.position = positions[i];
         v.normal = normals[i];
         v.texcoord = texcoords[i];
@@ -422,12 +422,12 @@ void _Model::CreateBuiltInCube()
 
     mesh.mIndices = indices;
 
-    MeshInstance instance;
+    PbrMeshInstance instance;
     instance.mesh = mesh;
 
     mMeshInstances.emplace_back(instance);
 }
-void _Model::CreateBuiltInSphere()
+void PbrModel::CreateBuiltInSphere()
 {
     std::vector<Vector3f> positions;
     std::vector<Vector3f> normals;
@@ -479,10 +479,10 @@ void _Model::CreateBuiltInSphere()
         }
     }
 
-    _Mesh mesh;
+    PbrMesh mesh;
     for (int32_t i = 0; i < 24; ++i)
     {
-        _Vertex v;
+        PbrVertex v;
         v.position = positions[i];
         v.normal = normals[i];
         v.texcoord = texcoords[i];
@@ -491,18 +491,18 @@ void _Model::CreateBuiltInSphere()
 
     mesh.mIndices = indices;
 
-    MeshInstance instance;
+    PbrMeshInstance instance;
     instance.mesh = mesh;
 
     mMeshInstances.emplace_back(instance);
 }
 
-const std::vector<MeshInstance> &_Model::GetMeshInstances() const
+const std::vector<PbrMeshInstance> &PbrModel::GetMeshInstances() const
 {
     return mMeshInstances;
 }
 
-const Matrix4f &_Model::GetModelMat()
+const Matrix4f &PbrModel::GetModelMat()
 {
     return mModelMat;
 }

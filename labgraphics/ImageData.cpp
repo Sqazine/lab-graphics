@@ -1,24 +1,24 @@
 #include "ImageData.h"
 
-ImageData::ImageData() : type(ImageDataType::RGBA8), texWidth(32), texHeight(32), texChannels(4), imageSize(texHeight * texWidth * texChannels)
+ImageData::ImageData() : type(ImageDataType::RGBA8), texWidth(32), texHeight(32), mChannels(4), imageSize(texHeight * texWidth * mChannels)
 {
-	pixels = new unsigned char[texHeight * texWidth * texChannels];
+	mPixels = new unsigned char[texHeight * texWidth * mChannels];
 }
 
 ImageData::ImageData(ImageDataType type, int width, int height, int channel, void *pixels)
-	: type(type), pixels(pixels), texWidth(width), texHeight(height),
-	  texChannels(channel), imageSize(texHeight * texWidth * texChannels) {}
+	: type(type), mPixels(mPixels), texWidth(width), texHeight(height),
+	  mChannels(channel), imageSize(texHeight * texWidth * mChannels) {}
 
 ImageData::ImageData(ImageData &&texture)
 {
 	type = texture.type;
 	texHeight = texture.texHeight;
 	texWidth = texture.texWidth;
-	texChannels = texture.texChannels;
+	mChannels = texture.mChannels;
 	imageSize = texture.imageSize;
-	pixels = texture.pixels;
+	mPixels = texture.mPixels;
 
-	texture.pixels = nullptr;
+	texture.mPixels = nullptr;
 }
 
 ImageData &ImageData::operator=(ImageData &&texture)
@@ -28,11 +28,11 @@ ImageData &ImageData::operator=(ImageData &&texture)
 		type = texture.type;
 		texHeight = texture.texHeight;
 		texWidth = texture.texWidth;
-		texChannels = texture.texChannels;
+		mChannels = texture.mChannels;
 		imageSize = texture.imageSize;
-		pixels = texture.pixels;
+		mPixels = texture.mPixels;
 
-		texture.pixels = nullptr;
+		texture.mPixels = nullptr;
 	}
 
 	return *this;
@@ -43,16 +43,16 @@ bool ImageData::operator==(ImageData *other)
 	return type == other->type &&
 		   texWidth == other->texWidth &&
 		   texHeight == other->texHeight &&
-		   texChannels == other->texChannels &&
+		   mChannels == other->mChannels &&
 		   imageSize == other->imageSize &&
-		   pixels == other->pixels;
+		   mPixels == other->mPixels;
 }
 
 ImageData::~ImageData()
 {
-	if (pixels != nullptr && type != ImageDataType::HDR)
+	if (mPixels != nullptr && type != ImageDataType::HDR)
 	{
-		delete pixels;
-		pixels = nullptr;
+		delete mPixels;
+		mPixels = nullptr;
 	}
 }

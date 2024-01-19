@@ -5,7 +5,7 @@
 #include <cassert>
 #include <string>
 #include <tinyobjloader/tiny_obj_loader.h>
-#include "Base/App.h"
+#include "App.h"
 
 void AccelStructScene::BuildBLAS(Device* device)
 {
