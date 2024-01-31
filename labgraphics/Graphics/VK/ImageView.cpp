@@ -5,7 +5,7 @@
 #include <iostream>
 
 ImageView2D::ImageView2D(const Device &device, VkImage image, Format format)
-    : mDevice(device), mRelatedImageHandle(image)
+    : mDevice(device)
 {
     VkImageViewCreateInfo imageViewInfo{};
     imageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -37,11 +37,6 @@ ImageView2D::~ImageView2D()
 const VkImageView &ImageView2D::GetHandle() const
 {
     return mHandle;
-}
-
-const VkImage &ImageView2D::GetRelatedImageHandle() const
-{
-    return mRelatedImageHandle;
 }
 
 VkImageSubresourceRange ImageView2D::GetSubresourceRange() const

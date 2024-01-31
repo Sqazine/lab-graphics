@@ -10,11 +10,8 @@ public:
 
     const VkImageView &GetHandle() const;
 
-    const VkImage& GetRelatedImageHandle() const;
-
     VkImageSubresourceRange GetSubresourceRange() const;
 private:
     const class Device &mDevice;
-    VkImage mRelatedImageHandle;
     VkImageView mHandle;
 };

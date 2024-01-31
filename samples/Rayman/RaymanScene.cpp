@@ -88,7 +88,7 @@ void RaymanScene::AddHDR(HDRData *hdr)
 
 int RaymanScene::AddTexture(ImageData *texture)
 {
-    int id;
+    int id = 0;
 
     bool exists = false;
     for (int i = 0; i < textureDatas.size(); ++i)

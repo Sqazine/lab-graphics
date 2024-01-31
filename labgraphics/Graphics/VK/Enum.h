@@ -26,8 +26,6 @@ enum class BufferUsage : uint64_t
     ITEM_BUFFER(VERTEX),
     ITEM_BUFFER(INDIRECT),
     ITEM(SHADER_DEVICE_ADDRESS),
-    ITEM_KHR(VIDEO_DECODE_SRC),
-    ITEM_KHR(VIDEO_DECODE_DST),
     ITEM_BUFFER_EXT(TRANSFORM_FEEDBACK),
     ITEM_BUFFER_EXT(TRANSFORM_FEEDBACK_COUNTER),
     ITEM_EXT(CONDITIONAL_RENDERING),
@@ -86,9 +84,6 @@ enum class ImageUsage : uint64_t
     ITEM(DEPTH_STENCIL_ATTACHMENT),
     ITEM(TRANSIENT_ATTACHMENT),
     ITEM(INPUT_ATTACHMENT),
-    ITEM_KHR(VIDEO_DECODE_DST),
-    ITEM_KHR(VIDEO_DECODE_SRC),
-    ITEM_KHR(VIDEO_DECODE_DPB),
     ITEM_KHR(FRAGMENT_SHADING_RATE_ATTACHMENT),
 #undef ITEM
 #undef ITEM_KHR
@@ -445,3 +440,32 @@ enum class BlendFactor : uint64_t
 };
 #define BLEND_FACTOR_CAST(t) (static_cast<VkBlendFactor>(std::underlying_type<BlendFactor>::type(t)))
 ENUM_CLASS_OP(BLEND_FACTOR_CAST, BlendFactor, VkBlendFactor)
+
+enum class BlendOp : uint64_t
+{
+#define ITEM(x) x = VK_BLEND_OP_##x
+
+    ITEM(ADD),
+    ITEM(SUBTRACT),
+    ITEM(REVERSE_SUBTRACT),
+    ITEM(MIN),
+    ITEM(MAX),
+
+#undef ITEM
+};
+#define BLEND_OP_CAST(t) (static_cast<VkBlendOp>(std::underlying_type<BlendOp>::type(t)))
+
+enum class ColorComponent : uint64_t
+{
+#define ITEM(x) x = VK_COLOR_COMPONENT_##x##_BIT
+
+    ITEM(R),
+    ITEM(G),
+    ITEM(B),
+    ITEM(A),
+    ALL = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
+    
+#undef ITEM
+};
+#define COLOR_COMPONENT_CAST(t) (static_cast<VkColorComponentFlags>(std::underlying_type<ColorComponent>::type(t)))
+ENUM_CLASS_OP(COLOR_COMPONENT_CAST, ColorComponent, VkColorComponentFlags)

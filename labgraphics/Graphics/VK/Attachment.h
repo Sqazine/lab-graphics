@@ -3,21 +3,28 @@
 #include "Enum.h"
 #include "ImageView.h"
 
-class AttachmentDesc
+struct BlendDesc
+{
+    BlendOp op = BlendOp::ADD;
+    BlendFactor srcFactor = BlendFactor::ONE;
+    BlendFactor dstFactor = BlendFactor::ZERO;
+};
+
+class Attachment
 {
 public:
-    AttachmentDesc();
-    ~AttachmentDesc();
+    Attachment();
+    ~Attachment();
 
     void SetFormat(Format fmt);
-    void SetColorBlendDesc(bool enable, BlendFactor src, BlendFactor dst);
-    void SetAlphaBlendDesc(bool enable, BlendFactor src, BlendFactor dst);
+    void SetBlendDesc(bool enable, BlendDesc colorBlendDesc, BlendDesc alphaBlendDesc);
 
     void SetView(ImageView2D *view);
 
     const VkPipelineColorBlendAttachmentState &GetRaw() const;
 
-    const Format& GetFormat() const;
+    const Format &GetFormat() const;
+
 private:
     Format mFormat;
     VkPipelineColorBlendAttachmentState mBlendDesc;
