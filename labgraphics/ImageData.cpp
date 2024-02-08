@@ -2,12 +2,14 @@
 
 ImageData::ImageData() : type(ImageDataType::RGBA8), texWidth(32), texHeight(32), mChannels(4), imageSize(texHeight * texWidth * mChannels)
 {
-	mPixels = new unsigned char[texHeight * texWidth * mChannels];
+	mPixels = new uint8_t[texHeight * texWidth * mChannels];
 }
 
 ImageData::ImageData(ImageDataType type, int width, int height, int channel, void *pixels)
-	: type(type), mPixels(mPixels), texWidth(width), texHeight(height),
-	  mChannels(channel), imageSize(texHeight * texWidth * mChannels) {}
+	: type(type), mPixels(pixels), texWidth(width), texHeight(height),
+	  mChannels(channel), imageSize(texHeight * texWidth * mChannels)
+{
+}
 
 ImageData::ImageData(ImageData &&texture)
 {

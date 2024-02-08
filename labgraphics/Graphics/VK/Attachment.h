@@ -6,27 +6,28 @@
 struct BlendDesc
 {
     BlendOp op = BlendOp::ADD;
-    BlendFactor srcFactor = BlendFactor::ONE;
-    BlendFactor dstFactor = BlendFactor::ZERO;
+    BlendFactor srcFactor = BlendFactor::ZERO;
+    BlendFactor dstFactor = BlendFactor::ONE;
 };
 
-class Attachment
+class ColorAttachment
 {
 public:
-    Attachment();
-    ~Attachment();
+    ColorAttachment();
+    ~ColorAttachment();
 
-    void SetFormat(Format fmt);
-    void SetBlendDesc(bool enable, BlendDesc colorBlendDesc, BlendDesc alphaBlendDesc);
+    ColorAttachment &SetFormat(Format fmt);
+    ColorAttachment &SetBlendDesc(bool enable, BlendDesc colorBlendDesc = {}, BlendDesc alphaBlendDesc = {});
+    ColorAttachment &SetView(ImageView2D *view);
 
-    void SetView(ImageView2D *view);
-
-    const VkPipelineColorBlendAttachmentState &GetRaw() const;
+    VkPipelineColorBlendAttachmentState GetVkBlendState() const;
 
     const Format &GetFormat() const;
-
 private:
     Format mFormat;
-    VkPipelineColorBlendAttachmentState mBlendDesc;
     ImageView2D *mView;
+
+    bool mBlendEnable;
+    BlendDesc mColorBlendDesc;
+    BlendDesc mAlphaBlendDesc;
 };

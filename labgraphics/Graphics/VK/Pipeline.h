@@ -8,6 +8,7 @@
 #include "Format.h"
 #include "RenderPass.h"
 #include "Enum.h"
+#include "Attachment.h"
 
 class Pipeline
 {
@@ -72,6 +73,8 @@ public:
 	RasterPipeline &SetPipelineLayout(PipelineLayout *layout);
 
 	RasterPipeline &SetRenderPass(RenderPass *renderPass);
+
+	RasterPipeline& SetColorAttachments(const std::vector<ColorAttachment*> & attachments);
 
 	VkPipelineDepthStencilStateCreateInfo pDepthStencilState{VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO};
 	VkPipelineColorBlendStateCreateInfo pColorBlendState{VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO};
