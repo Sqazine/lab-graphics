@@ -133,8 +133,7 @@ void SphScene::Init()
 											 mRasterCommandBuffers[i]->BindPipeline(mRasterPipeline.get());
 											 mRasterCommandBuffers[i]->BindVertexBuffers(0, 1, {mPositionBuffer.get()});
 											 mRasterCommandBuffers[i]->Draw(PARTICLE_NUM, 1, 0, 0);
-											 mRasterCommandBuffers[i]->EndRenderPass();
-										 });
+											 mRasterCommandBuffers[i]->EndRenderPass(); });
 	}
 
 	mComputeCommandBuffer->Record([&]()
@@ -152,8 +151,7 @@ void SphScene::Init()
 									  mComputeCommandBuffer->BindPipeline(mComputePipelines[2].get());
 									  mComputeCommandBuffer->BindDescriptorSets(mComputePipelines[2]->GetLayout(), 0, {mComputeDescriptorSet});
 									  mComputeCommandBuffer->Dispatch(WORK_GROUP_NUM, 1, 1);
-									  mComputeCommandBuffer->PipelineBarrier(PipelineStage::COMPUTE_SHADER, PipelineStage::COMPUTE_SHADER, 0, 0, nullptr, 0, nullptr, 0, nullptr);
-								  });
+									  mComputeCommandBuffer->PipelineBarrier(PipelineStage::COMPUTE_SHADER, PipelineStage::COMPUTE_SHADER, 0, 0, nullptr, 0, nullptr, 0, nullptr); });
 }
 
 void SphScene::Update()
@@ -219,7 +217,8 @@ void SphScene::Simulate()
 
 void SphScene::Render()
 {
-	uint32_t swapChainImageIdx = App::Instance().GetGraphicsContext()->GetSwapChain()->AcquireNextImage(mImageAvailableSemaphores[currentFrame].get());
+	App::Instance().GetGraphicsContext()->GetSwapChain()->AcquireNextImage(mImageAvailableSemaphores[currentFrame].get());
+	uint32_t swapChainImageIdx = App::Instance().GetGraphicsContext()->GetSwapChain()->GetNextImageIdx();
 
 	if (mImagesInFlight[swapChainImageIdx] != nullptr)
 		mImagesInFlight[swapChainImageIdx]->Wait(VK_TRUE, UINT64_MAX);
@@ -228,7 +227,9 @@ void SphScene::Render()
 	mInFlightFences[currentFrame]->Reset();
 
 	mRasterCommandBuffers[swapChainImageIdx]->Submit({PipelineStage::COLOR_ATTACHMENT_OUTPUT}, {mImageAvailableSemaphores[currentFrame].get()}, {mRenderFinishedSemaphores[currentFrame].get()}, mInFlightFences[currentFrame].get());
-	mRasterCommandBuffers[swapChainImageIdx]->Present(swapChainImageIdx, {mRenderFinishedSemaphores[currentFrame].get()});
+
+	App::Instance().GetGraphicsContext()->GetSwapChain()->Present({mRenderFinishedSemaphores[currentFrame].get()});
+
 	App::Instance().GetGraphicsContext()->GetDevice()->GetPresentQueue()->WaitIdle();
 
 	currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;

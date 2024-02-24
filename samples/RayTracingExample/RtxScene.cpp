@@ -7,22 +7,22 @@
 #include <tinyobjloader/tiny_obj_loader.h>
 #include "App.h"
 
-void AccelStructScene::BuildBLAS(Device* device)
+void AccelStructScene::BuildBLAS(Device *device)
 {
 	const size_t numMeshes = meshes.size();
 
 	std::vector<VkAccelerationStructureGeometryKHR> geometries(numMeshes, VkAccelerationStructureGeometryKHR{});
 	std::vector<VkAccelerationStructureBuildRangeInfoKHR> ranges(numMeshes, VkAccelerationStructureBuildRangeInfoKHR{});
 	std::vector<VkAccelerationStructureBuildGeometryInfoKHR> buildInfos(numMeshes, VkAccelerationStructureBuildGeometryInfoKHR{});
-	std::vector<VkAccelerationStructureBuildSizesInfoKHR> sizeInfos(numMeshes, VkAccelerationStructureBuildSizesInfoKHR{ VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR });
+	std::vector<VkAccelerationStructureBuildSizesInfoKHR> sizeInfos(numMeshes, VkAccelerationStructureBuildSizesInfoKHR{VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR});
 
 	for (size_t i = 0; i < numMeshes; ++i)
 	{
-		_Mesh& mesh = meshes[i];
+		_Mesh &mesh = meshes[i];
 
-		auto& geometry = geometries[i];
-		auto& range = ranges[i];
-		auto& buildInfo = buildInfos[i];
+		auto &geometry = geometries[i];
+		auto &range = ranges[i];
+		auto &buildInfo = buildInfos[i];
 
 		range.primitiveCount = mesh.numFaces;
 
@@ -47,21 +47,22 @@ void AccelStructScene::BuildBLAS(Device* device)
 		buildInfo.pGeometries = &geometry;
 
 		device->vkGetAccelerationStructureBuildSizesKHR(device->GetHandle(),
-			VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
-			&buildInfo,
-			&range.primitiveCount,
-			&sizeInfos[i]);
+														VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
+														&buildInfo,
+														&range.primitiveCount,
+														&sizeInfos[i]);
 	}
 
 	VkDeviceSize maximumBlasSize = 0;
-	for (const auto& sizeInfo : sizeInfos)
+	for (const auto &sizeInfo : sizeInfos)
 		maximumBlasSize = Math::Max(sizeInfo.buildScratchSize, maximumBlasSize);
 
 	VkUtils::Buffer scratchBuffer;
 	VK_CHECK(scratchBuffer.Create(maximumBlasSize, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
 
 	auto cmd = App::Instance().GetGraphicsContext()->GetDevice()->GetRayTraceCommandPool()->CreatePrimaryCommandBuffer();
-	cmd->ExecuteImmediately([&]() {
+	cmd->ExecuteImmediately([&]()
+							{
 
 		VkMemoryBarrier memoryBarrier{};
 		memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
@@ -95,12 +96,11 @@ void AccelStructScene::BuildBLAS(Device* device)
 				VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
 				VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
 				0, 1, &memoryBarrier, 0, nullptr, 0, nullptr);
-		}
-		});
+		} });
 
 	for (size_t i = 0; i < numMeshes; ++i)
 	{
-		_Mesh& mesh = meshes[i];
+		_Mesh &mesh = meshes[i];
 
 		VkAccelerationStructureDeviceAddressInfoKHR addressInfo{};
 		addressInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
@@ -108,32 +108,32 @@ void AccelStructScene::BuildBLAS(Device* device)
 		mesh.blas.address = device->vkGetAccelerationStructureDeviceAddressKHR(device->GetHandle(), &addressInfo);
 	}
 }
-void AccelStructScene::BuildTLAS(Device* device)
+void AccelStructScene::BuildTLAS(Device *device)
 {
 	const VkTransformMatrixKHR transform =
-	{
-		1.0f,
-		0.0f,
-		0.0f,
-		0.0f,
-		0.0f,
-		1.0f,
-		0.0f,
-		0.0f,
-		0.0f,
-		0.0f,
-		1.0f,
-		0.0f,
-	};
+		{
+			1.0f,
+			0.0f,
+			0.0f,
+			0.0f,
+			0.0f,
+			1.0f,
+			0.0f,
+			0.0f,
+			0.0f,
+			0.0f,
+			1.0f,
+			0.0f,
+		};
 
 	const size_t numMeshes = meshes.size();
 
 	std::vector<VkAccelerationStructureInstanceKHR> instances(numMeshes, VkAccelerationStructureInstanceKHR{});
 	for (size_t i = 0; i < numMeshes; ++i)
 	{
-		_Mesh& mesh = meshes[i];
+		_Mesh &mesh = meshes[i];
 
-		VkAccelerationStructureInstanceKHR& instance = instances[i];
+		VkAccelerationStructureInstanceKHR &instance = instances[i];
 		instance.transform = transform;
 		instance.instanceCustomIndex = i;
 		instance.mask = 0xff;
@@ -144,8 +144,8 @@ void AccelStructScene::BuildTLAS(Device* device)
 
 	VkUtils::Buffer instancesBuffer;
 	VK_CHECK(instancesBuffer.Create(instances.size() * sizeof(VkAccelerationStructureInstanceKHR),
-		VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
+									VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR,
+									VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
 
 	if (!instancesBuffer.UploadData(instances.data(), instancesBuffer.GetSize()))
 		assert(false && "Failed to upload instances buffer");
@@ -172,12 +172,12 @@ void AccelStructScene::BuildTLAS(Device* device)
 
 	const uint32_t numInstances = instances.size();
 
-	VkAccelerationStructureBuildSizesInfoKHR sizeInfo = { VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR };
+	VkAccelerationStructureBuildSizesInfoKHR sizeInfo = {VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR};
 	device->vkGetAccelerationStructureBuildSizesKHR(device->GetHandle(), VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &buildInfo, &numInstances, &sizeInfo);
 
 	tlas.buffer.Create(sizeInfo.accelerationStructureSize,
-		VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+					   VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+					   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 	VkAccelerationStructureCreateInfoKHR createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
@@ -189,29 +189,28 @@ void AccelStructScene::BuildTLAS(Device* device)
 
 	VkUtils::Buffer scratchBuffer;
 	VK_CHECK(scratchBuffer.Create(sizeInfo.buildScratchSize,
-		VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+								  VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+								  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
 
 	buildInfo.scratchData = VkUtils::GetBufferDeviceAddress(scratchBuffer);
 	buildInfo.srcAccelerationStructure = VK_NULL_HANDLE;
 	buildInfo.dstAccelerationStructure = tlas.accelerationStructure;
 
 	auto cmd = App::Instance().GetGraphicsContext()->GetDevice()->GetRayTraceCommandPool()->CreatePrimaryCommandBuffer();
-	cmd->ExecuteImmediately([&]() {
+	cmd->ExecuteImmediately([&]()
+							{
 		VkAccelerationStructureBuildRangeInfoKHR range = {};
 		range.primitiveCount = numInstances;
 
 		const VkAccelerationStructureBuildRangeInfoKHR* ranges[1] = { &range };
 
-		device->vkCmdBuildAccelerationStructuresKHR(cmd->GetHandle(), 1, &buildInfo, ranges);
-		});
+		device->vkCmdBuildAccelerationStructuresKHR(cmd->GetHandle(), 1, &buildInfo, ranges); });
 
 	VkAccelerationStructureDeviceAddressInfoKHR addressInfo{};
 	addressInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
 	addressInfo.accelerationStructure = tlas.accelerationStructure;
 	tlas.address = device->vkGetAccelerationStructureDeviceAddressKHR(device->GetHandle(), &addressInfo);
 }
-
 
 static const float moveSpeed = 20.0f;
 static const float accelMult = 20.0f;
@@ -246,21 +245,21 @@ void RtxScene::Init()
 	App::Instance().GetWindow()->SetTitle("ray-tracing-example");
 
 	mWaitForFrameFences.resize(App::Instance().GetGraphicsContext()->GetSwapChain()->GetImages().size());
-	for (auto& fence : mWaitForFrameFences)
+	for (auto &fence : mWaitForFrameFences)
 		fence = std::make_unique<Fence>(*App::Instance().GetGraphicsContext()->GetDevice(), FenceStatus::SIGNALED);
 
-	const VkExtent3D extent = { App::Instance().GetWindow()->GetExtent().x, App::Instance().GetWindow()->GetExtent().y, 1 };
+	const VkExtent3D extent = {App::Instance().GetWindow()->GetExtent().x, App::Instance().GetWindow()->GetExtent().y, 1};
 
 	VK_CHECK(mOffscreenImage.Create(VK_IMAGE_TYPE_2D,
-		App::Instance().GetGraphicsContext()->GetSwapChain()->GetFormat().ToVkHandle(),
-		extent,
-		VK_IMAGE_TILING_OPTIMAL,
-		VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
+									App::Instance().GetGraphicsContext()->GetSwapChain()->GetFormat().ToVkHandle(),
+									extent,
+									VK_IMAGE_TILING_OPTIMAL,
+									VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+									VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));
 
-	VkImageSubresourceRange range = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+	VkImageSubresourceRange range = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
 	VK_CHECK(mOffscreenImage.CreateImageView(VK_IMAGE_VIEW_TYPE_2D, App::Instance().GetGraphicsContext()->GetSwapChain()->GetFormat().ToVkHandle(), range));
-	
+
 	mCommandBuffers = App::Instance().GetGraphicsContext()->GetDevice()->GetRayTraceCommandPool()->CreatePrimaryCommandBuffers(App::Instance().GetGraphicsContext()->GetSwapChain()->GetImages().size());
 	mSemaphoreImageAcquired = std::make_unique<Semaphore>(*App::Instance().GetGraphicsContext()->GetDevice());
 	mSemaphoreRenderFinished = std::make_unique<Semaphore>(*App::Instance().GetGraphicsContext()->GetDevice());
@@ -280,7 +279,7 @@ void RtxScene::ProcessInput()
 
 void RtxScene::Update()
 {
-	UniformParams* params = reinterpret_cast<UniformParams*>(mCameraBuffer.Map());
+	UniformParams *params = reinterpret_cast<UniformParams *>(mCameraBuffer.Map());
 	params->currentSamplesCount++;
 	UpdateCameraParams(params, App::Instance().GetTimer().GetDeltaTime());
 	mCameraBuffer.Unmap();
@@ -288,20 +287,18 @@ void RtxScene::Update()
 
 void RtxScene::Render()
 {
-	uint32_t imageIndex;
+	App::Instance().GetGraphicsContext()->GetSwapChain()->AcquireNextImage(mSemaphoreImageAcquired.get());
 
-	VK_CHECK(vkAcquireNextImageKHR(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), App::Instance().GetGraphicsContext()->GetSwapChain()->GetHandle(), UINT64_MAX, mSemaphoreImageAcquired->GetHandle(), VK_NULL_HANDLE, &imageIndex));
-
-	Fence* fence = mWaitForFrameFences[imageIndex].get();
+	Fence *fence = mWaitForFrameFences[App::Instance().GetGraphicsContext()->GetSwapChain()->GetNextImageIdx()].get();
 
 	fence->Wait(VK_TRUE, UINT64_MAX);
 	fence->Reset();
 
 	const PipelineStage waitStageMask = PipelineStage::COLOR_ATTACHMENT_OUTPUT;
 
-	mCommandBuffers[imageIndex]->Submit({ waitStageMask }, { mSemaphoreImageAcquired.get() }, { mSemaphoreRenderFinished.get() }, fence);
+	mCommandBuffers[App::Instance().GetGraphicsContext()->GetSwapChain()->GetNextImageIdx()]->Submit({waitStageMask}, {mSemaphoreImageAcquired.get()}, {mSemaphoreRenderFinished.get()}, fence);
 
-	mCommandBuffers[imageIndex]->Present(imageIndex, {mSemaphoreRenderFinished.get()});
+	App::Instance().GetGraphicsContext()->GetSwapChain()->Present({mSemaphoreRenderFinished.get()});
 }
 
 void RtxScene::RenderUI()
@@ -310,7 +307,7 @@ void RtxScene::RenderUI()
 
 void RtxScene::CleanUp()
 {
-	for (_Mesh& mesh : mScene.meshes)
+	for (_Mesh &mesh : mScene.meshes)
 		App::Instance().GetGraphicsContext()->GetDevice()->vkDestroyAccelerationStructureKHR(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), mesh.blas.accelerationStructure, nullptr);
 
 	mScene.meshes.clear();
@@ -342,7 +339,7 @@ void RtxScene::CleanUp()
 		mPipelineLayout = VK_NULL_HANDLE;
 	}
 
-	for (VkDescriptorSetLayout& dsl : mDescriptorSetsLayouts)
+	for (VkDescriptorSetLayout &dsl : mDescriptorSetsLayouts)
 		vkDestroyDescriptorSetLayout(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), dsl, nullptr);
 	mDescriptorSetsLayouts.clear();
 
@@ -354,11 +351,12 @@ void RtxScene::CleanUp()
 
 void RtxScene::FillCommandBuffers()
 {
-	VkImageSubresourceRange subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+	VkImageSubresourceRange subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
 
 	for (size_t i = 0; i < mCommandBuffers.size(); ++i)
 	{
-		mCommandBuffers[i]->Record([&]() {
+		mCommandBuffers[i]->Record([&]()
+								   {
 			mCommandBuffers[i]->ImageBarrier(mOffscreenImage.GetImage(), Access::NONE, Access::SHADER_WRITE, ImageLayout::UNDEFINED, ImageLayout::GENERAL, subresourceRange);
 
 			vkCmdBindPipeline(mCommandBuffers[i]->GetHandle(), VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, mPipeline);
@@ -401,8 +399,7 @@ void RtxScene::FillCommandBuffers()
 				&copyRegion);
 
 
-			mCommandBuffers[i]->ImageBarrier(App::Instance().GetGraphicsContext()->GetSwapChain()->GetImages()[i], Access::TRANSFER_WRITE, Access::NONE, ImageLayout::TRANSFER_DST_OPTIMAL, ImageLayout::PRESENT_SRC_KHR, subresourceRange);
-			});
+			mCommandBuffers[i]->ImageBarrier(App::Instance().GetGraphicsContext()->GetSwapChain()->GetImages()[i], Access::TRANSFER_WRITE, Access::NONE, ImageLayout::TRANSFER_DST_OPTIMAL, ImageLayout::PRESENT_SRC_KHR, subresourceRange); });
 	}
 }
 
@@ -430,8 +427,8 @@ void RtxScene::LoadSceneGeometry()
 
 	for (size_t meshIdx = 0; meshIdx < shapes.size(); ++meshIdx)
 	{
-		_Mesh& mesh = mScene.meshes[meshIdx];
-		const tinyobj::shape_t& shape = shapes[meshIdx];
+		_Mesh &mesh = mScene.meshes[meshIdx];
+		const tinyobj::shape_t &shape = shapes[meshIdx];
 
 		const size_t numFaces = shape.mesh.num_face_vertices.size();
 		const size_t numVertices = numFaces * 3;
@@ -446,28 +443,28 @@ void RtxScene::LoadSceneGeometry()
 		const size_t materialIdBufferSize = numFaces * sizeof(uint32_t);
 
 		VK_CHECK(mesh.positionBuffer.Create(positionBufferSize,
-			VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
+											VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+											VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
 		VK_CHECK(mesh.indexBuffer.Create(indexBufferSize,
-			VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
+										 VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+										 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
 		VK_CHECK(mesh.faceBuffer.Create(facesBufferSize,
-			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
+										VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+										VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
 
 		VK_CHECK(mesh.attributeBuffer.Create(attribsBufferSize,
-			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
+											 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+											 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
 
 		VK_CHECK(mesh.materialIDBuffer.Create(materialIdBufferSize,
-			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
+											  VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+											  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT));
 
-		Vector3f* positions = reinterpret_cast<Vector3f*>(mesh.positionBuffer.Map());
-		VertexAttribute* attribs = reinterpret_cast<VertexAttribute*>(mesh.attributeBuffer.Map());
-		uint32_t* indices = reinterpret_cast<uint32_t*>(mesh.indexBuffer.Map());
-		uint32_t* faces = reinterpret_cast<uint32_t*>(mesh.faceBuffer.Map());
-		uint32_t* matIDs = reinterpret_cast<uint32_t*>(mesh.materialIDBuffer.Map());
+		Vector3f *positions = reinterpret_cast<Vector3f *>(mesh.positionBuffer.Map());
+		VertexAttribute *attribs = reinterpret_cast<VertexAttribute *>(mesh.attributeBuffer.Map());
+		uint32_t *indices = reinterpret_cast<uint32_t *>(mesh.indexBuffer.Map());
+		uint32_t *faces = reinterpret_cast<uint32_t *>(mesh.faceBuffer.Map());
+		uint32_t *matIDs = reinterpret_cast<uint32_t *>(mesh.materialIDBuffer.Map());
 
 		size_t vIdx = 0;
 		for (size_t f = 0; f < numFaces; ++f)
@@ -475,11 +472,11 @@ void RtxScene::LoadSceneGeometry()
 			assert(shape.mesh.num_face_vertices[f] == 3);
 			for (size_t j = 0; j < 3; ++j, ++vIdx)
 			{
-				const tinyobj::index_t& i = shape.mesh.indices[vIdx];
+				const tinyobj::index_t &i = shape.mesh.indices[vIdx];
 
-				Vector3f& pos = positions[vIdx];
-				Vector4f& normal = attribs[vIdx].normal;
-				Vector4f& uv = attribs[vIdx].uv;
+				Vector3f &pos = positions[vIdx];
+				Vector4f &normal = attribs[vIdx].normal;
+				Vector4f &uv = attribs[vIdx].uv;
 
 				pos.x = attrib.vertices[3 * i.vertex_index + 0];
 				pos.y = attrib.vertices[3 * i.vertex_index + 1];
@@ -522,8 +519,8 @@ void RtxScene::LoadSceneGeometry()
 
 	for (size_t i = 0; i < materials.size(); ++i)
 	{
-		const tinyobj::material_t& srcMat = materials[i];
-		_Material& dstMat = mScene.materials[i];
+		const tinyobj::material_t &srcMat = materials[i];
+		_Material &dstMat = mScene.materials[i];
 
 		std::string fullTexturePath = std::string(RAY_TRACING_EXAMPLE_DIR) + "/" + srcMat.diffuse_texname;
 		if (dstMat.albedo.Load(fullTexturePath))
@@ -542,10 +539,10 @@ void RtxScene::LoadSceneGeometry()
 
 	for (size_t i = 0; i < numMeshes; ++i)
 	{
-		const _Mesh& mesh = mScene.meshes[i];
-		VkDescriptorBufferInfo& matIDsInfo = mScene.materialIDBufferInfos[i];
-		VkDescriptorBufferInfo& attribsInfo = mScene.attributeBufferInfos[i];
-		VkDescriptorBufferInfo& facesInfo = mScene.faceBufferInfos[i];
+		const _Mesh &mesh = mScene.meshes[i];
+		VkDescriptorBufferInfo &matIDsInfo = mScene.materialIDBufferInfos[i];
+		VkDescriptorBufferInfo &attribsInfo = mScene.attributeBufferInfos[i];
+		VkDescriptorBufferInfo &facesInfo = mScene.faceBufferInfos[i];
 
 		matIDsInfo.buffer = mesh.materialIDBuffer.GetBuffer();
 		matIDsInfo.offset = 0;
@@ -563,8 +560,8 @@ void RtxScene::LoadSceneGeometry()
 	mScene.textureImageInfos.resize(numMaterials);
 	for (size_t i = 0; i < numMaterials; ++i)
 	{
-		const _Material& mat = mScene.materials[i];
-		VkDescriptorImageInfo& textureInfo = mScene.textureImageInfos[i];
+		const _Material &mat = mScene.materials[i];
+		VkDescriptorImageInfo &textureInfo = mScene.textureImageInfos[i];
 
 		textureInfo.sampler = mat.albedo.GetSampler();
 		textureInfo.imageView = mat.albedo.GetImageView();
@@ -601,11 +598,11 @@ void RtxScene::CreateCamera()
 	mCamera.SetFovY(45.0f);
 	mCamera.LookAt(Vector3f(0.25f, 3.20f, 6.15f), Vector3f(0.25f, 2.75f, 5.25f));
 }
-void RtxScene::UpdateCameraParams(UniformParams* params, const float dt)
+void RtxScene::UpdateCameraParams(UniformParams *params, const float dt)
 {
 	Vector2f moveDelta(0.0f, 0.0f);
 
-	const uint8_t* keyboardState = SDL_GetKeyboardState(nullptr);
+	const uint8_t *keyboardState = SDL_GetKeyboardState(nullptr);
 	if (keyboardState[SDL_SCANCODE_W])
 		moveDelta.y += 1.0f;
 	if (keyboardState[SDL_SCANCODE_S])
@@ -672,7 +669,7 @@ void RtxScene::CreateDescriptorSetLayouts()
 	std::vector<VkDescriptorSetLayoutBinding> bindings = {
 		accelerationStructureLayoutBinding,
 		resultImageLayoutBinding,
-		cameraDataBufferBinding };
+		cameraDataBufferBinding};
 
 	VkDescriptorSetLayoutCreateInfo set0LayoutInfo;
 	set0LayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -721,7 +718,7 @@ void RtxScene::CreateDescriptorSetLayouts()
 		materialSsboBinding,
 		vertexAttributeSsboBinding,
 		faceSsboBinding,
-		textureSsboBinding };
+		textureSsboBinding};
 
 	VkDescriptorSetLayoutCreateInfo set1LayoutInfo;
 	set1LayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -770,8 +767,8 @@ void RtxScene::CreateRayTracingPipelineAndSBT()
 
 	mSBT.Init(1, 1, App::Instance().GetGraphicsContext()->GetDevice()->GetRayTracingPipelineProps().shaderGroupHandleSize, App::Instance().GetGraphicsContext()->GetDevice()->GetRayTracingPipelineProps().shaderGroupBaseAlignment);
 	mSBT.SetRayGenStage(rayGenShader.GetShaderStage(VK_SHADER_STAGE_RAYGEN_BIT_KHR));
-	mSBT.AddStageToHitGroup({ rayChitShader.GetShaderStage(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR) }, 0);
-	mSBT.AddStageToMissGroup({ rayMissShader.GetShaderStage(VK_SHADER_STAGE_MISS_BIT_KHR) }, 0);
+	mSBT.AddStageToHitGroup({rayChitShader.GetShaderStage(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR)}, 0);
+	mSBT.AddStageToMissGroup({rayMissShader.GetShaderStage(VK_SHADER_STAGE_MISS_BIT_KHR)}, 0);
 
 	VkRayTracingPipelineCreateInfoKHR rayPipelineInfo{};
 	rayPipelineInfo.sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR;
@@ -792,13 +789,13 @@ void RtxScene::UpdateDescriptorSets()
 	const uint32_t numMaterials = mScene.materials.size();
 
 	std::vector<VkDescriptorPoolSize> poolSizes({
-		{VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1},        // tlas
-		{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1},                     // output image
-		{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1},                    // camera data
-		{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, numMeshes * 3},        // per-face material IDs for each mesh
+		{VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1},		   // tlas
+		{VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1},					   // output image
+		{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1},					   // camera data
+		{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, numMeshes * 3},		   // per-face material IDs for each mesh
 		{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, numMaterials}, // textures for each material
-		{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1}             // env texture
-		});
+		{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1}			   // env texture
+	});
 	VkDescriptorPoolCreateInfo descriptorPoolCreateInfo{};
 	descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 	descriptorPoolCreateInfo.pNext = nullptr;
@@ -932,14 +929,14 @@ void RtxScene::UpdateDescriptorSets()
 	envTexturesWrite.pBufferInfo = nullptr;
 	envTexturesWrite.pTexelBufferView = nullptr;
 
-	std::vector<VkWriteDescriptorSet> descriptorWrites({ accelerationStructureWrite,
+	std::vector<VkWriteDescriptorSet> descriptorWrites({accelerationStructureWrite,
 														resultImageWrite,
 														cameraDataBufferWrite,
 														matIDBufferWrite,
 														attribBufferWrite,
 														facesBufferWrite,
 														textureBufferWrite,
-														envTexturesWrite });
+														envTexturesWrite});
 
 	vkUpdateDescriptorSets(App::Instance().GetGraphicsContext()->GetDevice()->GetHandle(), descriptorWrites.size(), descriptorWrites.data(), 0, VK_NULL_HANDLE);
 }

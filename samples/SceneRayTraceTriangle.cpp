@@ -57,10 +57,10 @@ void SceneRayTraceTriangle::Update()
 }
 void SceneRayTraceTriangle::Render()
 {
-	auto imageIndex = App::Instance().GetGraphicsContext()->GetSwapChain()->AcquireNextImage(mSemaphoreImageAvailable.get());
+	App::Instance().GetGraphicsContext()->GetSwapChain()->AcquireNextImage(mSemaphoreImageAvailable.get());
 
-	VkImage swapChainImage = App::Instance().GetGraphicsContext()->GetSwapChain()->GetImage(imageIndex);
-	auto commandBuffer = mCommandBuffers[imageIndex].get();
+	VkImage swapChainImage = App::Instance().GetGraphicsContext()->GetSwapChain()->GetImage(App::Instance().GetGraphicsContext()->GetSwapChain()->GetNextImageIdx());
+	auto commandBuffer = mCommandBuffers[App::Instance().GetGraphicsContext()->GetSwapChain()->GetNextImageIdx()].get();
 
 	commandBuffer->Reset();
 
@@ -133,7 +133,7 @@ void SceneRayTraceTriangle::Render()
 
 	commandBuffer->Submit({PipelineStage::COLOR_ATTACHMENT_OUTPUT},{mSemaphoreImageAvailable.get()},{mSemaphoreRenderAvailable.get()});
 
-	commandBuffer->Present(imageIndex,{mSemaphoreRenderAvailable.get()});
+	App::Instance().GetGraphicsContext()->GetSwapChain()->Present({mSemaphoreRenderAvailable.get()});
 }
 
 void SceneRayTraceTriangle::CleanUp()

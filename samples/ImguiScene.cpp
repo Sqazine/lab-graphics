@@ -1,4 +1,5 @@
 #include "ImguiScene.h"
+#include "App.h"
 
 #define MAX_FRAMES_IN_FLIGHT 2
 
@@ -26,12 +27,11 @@ void SceneImgui::Init()
     mDescriptorTable->GetPool()->AddPoolDesc(DescriptorType::STORAGE_BUFFER_DYNAMIC, 1000);
     mDescriptorTable->GetPool()->AddPoolDesc(DescriptorType::INPUT_ATTACHMENT, 1000);
 
-    mRasterCommandBuffers = App::Instance().GetGraphicsContext()->GetDevice()->GetRasterCommandPool()->CreatePrimaryCommandBuffers(App::Instance().GetGraphicsContext()->GetSwapChain()->GetDefaultFrameBuffers().size());
+    mRasterCommandBuffers = App::Instance().GetGraphicsContext()->GetDevice()->GetRasterCommandPool()->CreatePrimaryCommandBuffers(MAX_FRAMES_IN_FLIGHT);
 
     mImageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     mRenderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     mInFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
-    mImagesInFlight.resize(App::Instance().GetGraphicsContext()->GetSwapChain()->GetImages().size(), nullptr);
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
     {
@@ -74,13 +74,13 @@ void SceneImgui::Init()
     // - The fonts will be rasterized at a given size (w/ oversampling) and stored into a texture when calling ImFontAtlas::Build()/GetTexDataAsXXXX(), which ImGui_ImplXXXX_NewFrame below will call.
     // - Read 'docs/FONTS.md' for more instructions and details.
     // - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
-    //io.Fonts->AddFontDefault();
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/ProggyTiny.ttf", 10.0f);
-    //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
-    //IM_ASSERT(font != NULL);
+    // io.Fonts->AddFontDefault();
+    // io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
+    // io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
+    // io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
+    // io.Fonts->AddFontFromFileTTF("../../misc/fonts/ProggyTiny.ttf", 10.0f);
+    // ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
+    // IM_ASSERT(font != NULL);
 
     // Upload Fonts
     {
@@ -154,34 +154,35 @@ void SceneImgui::RenderUI()
     const bool is_minimized = (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f);
     if (!is_minimized)
     {
-        uint32_t swapChainImageIdx = App::Instance().GetGraphicsContext()->GetSwapChain()->AcquireNextImage(mImageAvailableSemaphores[currentFrame].get());
+        App::Instance().GetGraphicsContext()->GetSwapChain()->AcquireNextImage(mImageAvailableSemaphores[currentFrame].get());
 
-        if (mImagesInFlight[swapChainImageIdx] != nullptr)
-            mImagesInFlight[swapChainImageIdx]->Wait(VK_TRUE, UINT64_MAX);
-        mImagesInFlight[swapChainImageIdx] = mInFlightFences[currentFrame].get();
+        auto swapChainImageIdx = App::Instance().GetGraphicsContext()->GetSwapChain()->GetNextImageIdx();
 
+        mInFlightFences[currentFrame]->Wait();
         mInFlightFences[currentFrame]->Reset();
 
-        mRasterCommandBuffers[swapChainImageIdx]->Record([&]()
+        mRasterCommandBuffers[currentFrame]->Record([&]()
                                                          {
                                                           
-                                                             mRasterCommandBuffers[swapChainImageIdx]->BeginRenderPass(App::Instance().GetGraphicsContext()->GetSwapChain()->GetDefaultRenderPass()->GetHandle(),
+                                                             mRasterCommandBuffers[currentFrame]->BeginRenderPass(App::Instance().GetGraphicsContext()->GetSwapChain()->GetDefaultRenderPass()->GetHandle(),
                                                                                                                        App::Instance().GetGraphicsContext()->GetSwapChain()->GetDefaultFrameBuffers()[swapChainImageIdx]->GetHandle(),
                                                                                                                        App::Instance().GetGraphicsContext()->GetSwapChain()->GetRenderArea(),
                                                                                                                        {VkClearValue{mClearColor.x, mClearColor.y, mClearColor.z, mClearColor.w}},
                                                                                                                        VK_SUBPASS_CONTENTS_INLINE);
                                                              // Record dear imgui primitives into command buffer
-                                                             ImGui_ImplVulkan_RenderDrawData(draw_data, mRasterCommandBuffers[swapChainImageIdx]->GetHandle());
-                                                             mRasterCommandBuffers[swapChainImageIdx]->EndRenderPass();
-                                                         });
+                                                             ImGui_ImplVulkan_RenderDrawData(draw_data, mRasterCommandBuffers[currentFrame]->GetHandle());
+                                                             mRasterCommandBuffers[currentFrame]->EndRenderPass(); });
 
-        mRasterCommandBuffers[swapChainImageIdx]->Submit({PipelineStage::COLOR_ATTACHMENT_OUTPUT}, {mImageAvailableSemaphores[currentFrame].get()}, {mRenderFinishedSemaphores[currentFrame].get()}, mInFlightFences[currentFrame].get());
-        mRasterCommandBuffers[swapChainImageIdx]->Present(swapChainImageIdx, {mRenderFinishedSemaphores[currentFrame].get()});
+        mRasterCommandBuffers[currentFrame]->Submit({PipelineStage::COLOR_ATTACHMENT_OUTPUT}, {mImageAvailableSemaphores[currentFrame].get()}, {mRenderFinishedSemaphores[currentFrame].get()}, mInFlightFences[currentFrame].get());
+
+        App::Instance().GetGraphicsContext()->GetSwapChain()->Present({mRenderFinishedSemaphores[currentFrame].get()});
+
         App::Instance().GetGraphicsContext()->GetDevice()->GetPresentQueue()->WaitIdle();
 
         currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
     }
 }
+
 void SceneImgui::CleanUp()
 {
     App::Instance().GetGraphicsContext()->GetDevice()->WaitIdle();

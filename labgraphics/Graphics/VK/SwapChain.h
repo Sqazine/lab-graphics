@@ -18,7 +18,7 @@ struct SwapChainSupportDetails
 class SwapChain
 {
 public:
-    SwapChain(const class Device &device);
+    SwapChain(class Device &device);
     ~SwapChain();
 
     const VkSwapchainKHR &GetHandle() const;
@@ -34,12 +34,17 @@ public:
 
     const std::vector<std::unique_ptr<ImageView2D>> &GetImageViews() const;
 
-    uint32_t AcquireNextImage(const Semaphore *semaphore = nullptr, const Fence *fence = nullptr) const;
+    void AcquireNextImage(const Semaphore *semaphore = nullptr, const Fence *fence = nullptr);
+
+    uint32_t GetNextImageIdx() const;
 
     void ReBuild();
 
+    void Present(const std::vector<Semaphore *> waitSemaphores);
+
     RenderPass *GetDefaultRenderPass() const;
     const std::vector<std::unique_ptr<Framebuffer>> &GetDefaultFrameBuffers() const;
+
 private:
     void Build();
 
@@ -49,7 +54,7 @@ private:
     VkPresentModeKHR SelectPresentMode();
     VkExtent2D SelectExtent();
 
-    const class Device &mDevice;
+    class Device &mDevice;
 
     VkSwapchainKHR mHandle;
     VkSurfaceFormatKHR mSurfaceFormat;
@@ -63,4 +68,6 @@ private:
 
     std::unique_ptr<RenderPass> mDefaultRenderPass;
     std::vector<std::unique_ptr<Framebuffer>> mDefaultFrameBuffers;
+
+    uint32_t mNextImageIdx;
 };

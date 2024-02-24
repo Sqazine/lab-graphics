@@ -20,6 +20,5 @@ private:
     std::vector<std::unique_ptr<Semaphore>> mImageAvailableSemaphores;
     std::vector<std::unique_ptr<Semaphore>> mRenderFinishedSemaphores;
     std::vector<std::unique_ptr<Fence>> mInFlightFences;
-    std::vector<Fence *> mImagesInFlight;
     size_t mCurFrame = 0;
 };

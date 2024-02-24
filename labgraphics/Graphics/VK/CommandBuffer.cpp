@@ -306,12 +306,16 @@ void RasterCommandBuffer::Submit(const std::vector<PipelineStage> &waitStages, c
 {
 	std::vector<VkSemaphore> rawSignal(signalSemaphores.size());
 	std::vector<VkSemaphore> rawWait(waitSemaphores.size());
+	std::vector<VkPipelineStageFlags> rawWaitStages(waitStages.size());
 
 	for (size_t i = 0; i < rawSignal.size(); ++i)
 		rawSignal[i] = signalSemaphores[i]->GetHandle();
 
 	for (size_t i = 0; i < rawWait.size(); ++i)
 		rawWait[i] = waitSemaphores[i]->GetHandle();
+
+	for (size_t i = 0; i < rawWaitStages.size(); ++i)
+		rawWaitStages[i] = PIPELINE_STAGE_CAST(waitStages[i]);
 
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -320,6 +324,7 @@ void RasterCommandBuffer::Submit(const std::vector<PipelineStage> &waitStages, c
 	submitInfo.pCommandBuffers = &mHandle;
 	submitInfo.waitSemaphoreCount = rawWait.size();
 	submitInfo.pWaitSemaphores = rawWait.data();
+	submitInfo.pWaitDstStageMask=rawWaitStages.data();
 	submitInfo.signalSemaphoreCount = rawSignal.size();
 	submitInfo.pSignalSemaphores = rawSignal.data();
 
@@ -336,24 +341,6 @@ void RasterCommandBuffer::Submit(const std::vector<PipelineStage> &waitStages, c
 		if (fence->GetStatus() == FenceStatus::UNSIGNALED)
 			fence->Wait();
 	}
-}
-
-void RasterCommandBuffer::Present(uint32_t imageIndex, const std::vector<Semaphore *> waitSemaphores) const
-{
-	std::vector<VkSemaphore> rawWait(waitSemaphores.size());
-
-	for (size_t i = 0; i < rawWait.size(); ++i)
-		rawWait[i] = waitSemaphores[i]->GetHandle();
-
-	VkPresentInfoKHR presentInfo{};
-	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-	presentInfo.waitSemaphoreCount = rawWait.size();
-	presentInfo.pWaitSemaphores = rawWait.data();
-	presentInfo.swapchainCount = 1;
-	presentInfo.pSwapchains = &App::Instance().GetGraphicsContext()->GetSwapChain()->GetHandle();
-	presentInfo.pImageIndices = &imageIndex;
-
-	mDevice.GetPresentQueue()->Present(presentInfo);
 }
 
 ComputeCommandBuffer::ComputeCommandBuffer(class Device &device, VkCommandBufferLevel level)
@@ -485,24 +472,6 @@ void RayTraceCommandBuffer::Submit(const std::vector<PipelineStage> &waitStages,
 		if (fence->GetStatus() == FenceStatus::UNSIGNALED)
 			fence->Wait();
 	}
-}
-
-void RayTraceCommandBuffer::Present(uint32_t imageIndex, const std::vector<Semaphore *> waitSemaphores) const
-{
-	std::vector<VkSemaphore> rawWait(waitSemaphores.size());
-
-	for (size_t i = 0; i < rawWait.size(); ++i)
-		rawWait[i] = waitSemaphores[i]->GetHandle();
-
-	VkPresentInfoKHR presentInfo{};
-	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-	presentInfo.waitSemaphoreCount = rawWait.size();
-	presentInfo.pWaitSemaphores = rawWait.data();
-	presentInfo.swapchainCount = 1;
-	presentInfo.pSwapchains = &App::Instance().GetGraphicsContext()->GetSwapChain()->GetHandle();
-	presentInfo.pImageIndices = &imageIndex;
-
-	mDevice.GetPresentQueue()->Present(presentInfo);
 }
 
 TransferCommandBuffer::TransferCommandBuffer(Device &device, VkCommandBufferLevel level)

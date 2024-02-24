@@ -2,7 +2,7 @@
 #include "Device.h"
 #include "VK/Utils.h"
 #include <iostream>
-SwapChain::SwapChain(const Device &device)
+SwapChain::SwapChain(Device &device)
     : mDevice(device), mHandle(VK_NULL_HANDLE)
 {
     Build();
@@ -52,35 +52,54 @@ const VkImage &SwapChain::GetImage(uint32_t idx) const
 }
 VkRect2D SwapChain::GetRenderArea() const
 {
-    return { {0,0},GetVkExtent() };
+    return {{0, 0}, GetVkExtent()};
 }
-const std::vector<std::unique_ptr<ImageView2D>>& SwapChain::GetImageViews() const
+const std::vector<std::unique_ptr<ImageView2D>> &SwapChain::GetImageViews() const
 {
-	return mSwapChainImageViews;
+    return mSwapChainImageViews;
 }
 
-uint32_t SwapChain::AcquireNextImage(const Semaphore* semaphore, const Fence* fence) const
+void SwapChain::AcquireNextImage(const Semaphore *semaphore, const Fence *fence)
 {
-    uint32_t imageIndex = 0;
-
     if (semaphore && fence)
-        VK_CHECK(vkAcquireNextImageKHR(mDevice.GetHandle(), mHandle, UINT64_MAX, semaphore->GetHandle(), fence->GetHandle(), &imageIndex))
+        VK_CHECK(vkAcquireNextImageKHR(mDevice.GetHandle(), mHandle, UINT64_MAX, semaphore->GetHandle(), fence->GetHandle(), &mNextImageIdx))
     else if (semaphore && !fence)
-        VK_CHECK(vkAcquireNextImageKHR(mDevice.GetHandle(), mHandle, UINT64_MAX, semaphore->GetHandle(), nullptr, &imageIndex))
+        VK_CHECK(vkAcquireNextImageKHR(mDevice.GetHandle(), mHandle, UINT64_MAX, semaphore->GetHandle(), nullptr, &mNextImageIdx))
     else if (!semaphore && fence)
-        VK_CHECK(vkAcquireNextImageKHR(mDevice.GetHandle(), mHandle, UINT64_MAX, nullptr, fence->GetHandle(), &imageIndex))
+        VK_CHECK(vkAcquireNextImageKHR(mDevice.GetHandle(), mHandle, UINT64_MAX, nullptr, fence->GetHandle(), &mNextImageIdx))
     else
-        VK_CHECK(vkAcquireNextImageKHR(mDevice.GetHandle(), mHandle, UINT64_MAX, nullptr, nullptr, &imageIndex))
+        VK_CHECK(vkAcquireNextImageKHR(mDevice.GetHandle(), mHandle, UINT64_MAX, nullptr, nullptr, &mNextImageIdx))
+}
 
-    return imageIndex;
+uint32_t SwapChain::GetNextImageIdx() const
+{
+    return mNextImageIdx;
 }
 
 void SwapChain::ReBuild()
 {
     mDevice.WaitIdle();
     vkDestroySwapchainKHR(mDevice.GetHandle(), mHandle, nullptr);
-    mHandle=VK_NULL_HANDLE;
+    mHandle = VK_NULL_HANDLE;
     Build();
+}
+
+void SwapChain::Present(const std::vector<Semaphore *> waitSemaphores)
+{
+    std::vector<VkSemaphore> rawWait(waitSemaphores.size());
+
+    for (size_t i = 0; i < rawWait.size(); ++i)
+        rawWait[i] = waitSemaphores[i]->GetHandle();
+
+    VkPresentInfoKHR presentInfo{};
+    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    presentInfo.waitSemaphoreCount = rawWait.size();
+    presentInfo.pWaitSemaphores = rawWait.data();
+    presentInfo.swapchainCount = 1;
+    presentInfo.pSwapchains = &mHandle;
+    presentInfo.pImageIndices = &mNextImageIdx;
+
+    mDevice.GetPresentQueue()->Present(presentInfo);
 }
 
 RenderPass *SwapChain::GetDefaultRenderPass() const

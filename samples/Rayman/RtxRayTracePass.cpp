@@ -238,7 +238,7 @@ void RtxRayTracePass::Render()
 										 {mRenderFinishedSemaphores[mCurFrame].get()},
 										 inFlightFence.get());
 
-	mCommandBuffers[mImageIndex]->Present(mImageIndex, {mRenderFinishedSemaphores[mCurFrame].get()});
+	App::Instance().GetGraphicsContext()->GetSwapChain()->Present({mRenderFinishedSemaphores[mCurFrame].get()});
 
 	mCurFrame = (mCurFrame + 1) % mInFlightFences.size();
 }

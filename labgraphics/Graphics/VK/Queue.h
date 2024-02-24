@@ -40,8 +40,7 @@ public:
 	~PresentQueue() {}
 
 private:
-	friend class RasterCommandBuffer;
-	friend class RayTraceCommandBuffer;
+	friend class SwapChain;
 
 	void Present(const VkPresentInfoKHR &info) const;
 };

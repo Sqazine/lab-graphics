@@ -72,7 +72,6 @@ public:
 	void DrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance);
 
 	void Submit(const std::vector<PipelineStage> &waitStages = {}, const std::vector<Semaphore *> waitSemaphores = {}, const std::vector<Semaphore *> signalSemaphores = {}, Fence *fence = nullptr) const override;
-	void Present(uint32_t imageIndex, const std::vector<Semaphore *> waitSemaphores = {}) const;
 };
 
 class ComputeCommandBuffer : public CommandBuffer
@@ -103,7 +102,6 @@ public:
 	void BuildAccelerationStructureKHR(uint32_t infoCount, const VkAccelerationStructureBuildGeometryInfoKHR *pInfos, const VkAccelerationStructureBuildRangeInfoKHR *const *ppBuildRangeInfos);
 
 	void Submit(const std::vector<PipelineStage> &waitStages = {}, const std::vector<Semaphore *> waitSemaphores = {}, const std::vector<Semaphore *> signalSemaphores = {}, Fence *fence = nullptr) const override;
-	void Present(uint32_t imageIndex, const std::vector<Semaphore *> waitSemaphores = {}) const;
 };
 
 class TransferCommandBuffer : public CommandBuffer

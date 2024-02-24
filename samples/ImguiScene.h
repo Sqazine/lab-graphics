@@ -1,9 +1,9 @@
 #pragma once
 #include <memory>
 #include "labgraphics.h"
-#include "imgui/imgui.h"
-#include "imgui/backends/imgui_impl_vulkan.h"
-#include "imgui/backends/imgui_impl_sdl.h"
+#include <imgui/imgui.h>
+#include <imgui/backends/imgui_impl_vulkan.h>
+#include <imgui/backends/imgui_impl_sdl.h>
 class SceneImgui : public Scene
 {
 public:
@@ -26,6 +26,5 @@ private:
     std::vector<std::unique_ptr<Semaphore>> mImageAvailableSemaphores;
     std::vector<std::unique_ptr<Semaphore>> mRenderFinishedSemaphores;
     std::vector<std::unique_ptr<Fence>> mInFlightFences;
-    std::vector<Fence *> mImagesInFlight;
     size_t currentFrame = 0;
 };
