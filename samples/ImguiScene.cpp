@@ -1,8 +1,6 @@
 #include "ImguiScene.h"
 #include "App.h"
 
-#define MAX_FRAMES_IN_FLIGHT 2
-
 static void check_vk_result(VkResult err)
 {
     if (err == 0)
@@ -27,18 +25,12 @@ void SceneImgui::Init()
     mDescriptorTable->GetPool()->AddPoolDesc(DescriptorType::STORAGE_BUFFER_DYNAMIC, 1000);
     mDescriptorTable->GetPool()->AddPoolDesc(DescriptorType::INPUT_ATTACHMENT, 1000);
 
-    mRasterCommandBuffers = App::Instance().GetGraphicsContext()->GetDevice()->GetRasterCommandPool()->CreatePrimaryCommandBuffers(MAX_FRAMES_IN_FLIGHT);
+    mInFlightFrameCount = (int32_t)App::Instance().GetGraphicsContext()->GetSwapChain()->GetImages().size();
 
-    mImageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    mRenderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    mInFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
-
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
-    {
-        mImageAvailableSemaphores[i] = App::Instance().GetGraphicsContext()->GetDevice()->CreateSemaphore();
-        mRenderFinishedSemaphores[i] = App::Instance().GetGraphicsContext()->GetDevice()->CreateSemaphore();
-        mInFlightFences[i] = App::Instance().GetGraphicsContext()->GetDevice()->CreateFence(FenceStatus::SIGNALED);
-    }
+    mRasterCommandBuffers = App::Instance().GetGraphicsContext()->GetDevice()->GetRasterCommandPool()->CreatePrimaryCommandBuffers(mInFlightFrameCount);
+    mImageAvailableSemaphores=App::Instance().GetGraphicsContext()->GetDevice()->CreateSemaphores(mInFlightFrameCount);
+    mRenderFinishedSemaphores=App::Instance().GetGraphicsContext()->GetDevice()->CreateSemaphores(mInFlightFrameCount);
+    mInFlightFences=App::Instance().GetGraphicsContext()->GetDevice()->CreateFences(mInFlightFrameCount,FenceStatus::SIGNALED);
 
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
@@ -179,7 +171,7 @@ void SceneImgui::RenderUI()
 
         App::Instance().GetGraphicsContext()->GetDevice()->GetPresentQueue()->WaitIdle();
 
-        currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+        currentFrame = (currentFrame + 1) % mInFlightFrameCount;
     }
 }
 

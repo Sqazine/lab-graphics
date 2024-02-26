@@ -3,20 +3,18 @@
 #include "Graphics/VK/CommandPool.h"
 #include "Graphics/VK/CommandBuffer.h"
 
-RasterPass::RasterPass()
+RasterPass::RasterPass(size_t inFlightFrameCount)
+    : mInFlightFrameCount(inFlightFrameCount)
 {
 
-    mImageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    mRenderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    mInFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+    mImageAvailableSemaphores.resize(mInFlightFrameCount);
+    mRenderFinishedSemaphores.resize(mInFlightFrameCount);
+    mInFlightFences.resize(mInFlightFrameCount);
 
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
-    {
-    mRasterCommandBuffers = App::Instance().GetGraphicsContext()->GetDevice()->GetRasterCommandPool()->CreatePrimaryCommandBuffers(MAX_FRAMES_IN_FLIGHT);
-        mImageAvailableSemaphores[i] = App::Instance().GetGraphicsContext()->GetDevice()->CreateSemaphore();
-        mRenderFinishedSemaphores[i] = App::Instance().GetGraphicsContext()->GetDevice()->CreateSemaphore();
-        mInFlightFences[i] = App::Instance().GetGraphicsContext()->GetDevice()->CreateFence(FenceStatus::SIGNALED);
-    }
+    mRasterCommandBuffers = App::Instance().GetGraphicsContext()->GetDevice()->GetRasterCommandPool()->CreatePrimaryCommandBuffers(mInFlightFrameCount);
+    mImageAvailableSemaphores = App::Instance().GetGraphicsContext()->GetDevice()->CreateSemaphores(mInFlightFrameCount);
+    mRenderFinishedSemaphores = App::Instance().GetGraphicsContext()->GetDevice()->CreateSemaphores(mInFlightFrameCount);
+    mInFlightFences = App::Instance().GetGraphicsContext()->GetDevice()->CreateFences(mInFlightFrameCount,FenceStatus::SIGNALED);
 }
 
 RasterPass::~RasterPass()
@@ -31,11 +29,11 @@ void RasterPass::Render()
     mInFlightFences[mCurFrame]->Reset();
 
     mRasterCommandBuffers[mCurFrame]->Submit({PipelineStage::COLOR_ATTACHMENT_OUTPUT}, {mImageAvailableSemaphores[mCurFrame].get()}, {mRenderFinishedSemaphores[mCurFrame].get()}, mInFlightFences[mCurFrame].get());
-    
+
     App::Instance().GetGraphicsContext()->GetSwapChain()->Present({mRenderFinishedSemaphores[mCurFrame].get()});
     App::Instance().GetGraphicsContext()->GetDevice()->GetPresentQueue()->WaitIdle();
 
-    mCurFrame = (mCurFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+    mCurFrame = (mCurFrame + 1) % mInFlightFrameCount;
 }
 
 void RasterPass::RecordCommand(std::function<void(RasterCommandBuffer *, uint32_t)> fn)

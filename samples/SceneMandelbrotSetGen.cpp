@@ -38,8 +38,7 @@ void SceneMandelbrotSetGen::Init()
                                               {
                                                   mComputeCommandBuffer->BindDescriptorSets(mPipelineLayout.get(), 0, {mDescriptorSet});
                                                   mComputeCommandBuffer->BindPipeline(mComputePipeline.get());
-                                                  mComputeCommandBuffer->Dispatch((uint32_t)ceil(mWindowExtent.x / float(WORKGROUP_SIZE)), (uint32_t)ceil(mWindowExtent.y / float(WORKGROUP_SIZE)), 1);
-                                              });
+                                                  mComputeCommandBuffer->Dispatch((uint32_t)ceil(mWindowExtent.x / float(WORKGROUP_SIZE)), (uint32_t)ceil(mWindowExtent.y / float(WORKGROUP_SIZE)), 1); });
 
     VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
     colorBlendAttachment.blendEnable = VK_FALSE;
@@ -48,7 +47,7 @@ void SceneMandelbrotSetGen::Init()
     colorBlendAttachment.colorBlendOp = BLEND_OP_CAST(BlendOp::ADD);
     colorBlendAttachment.srcAlphaBlendFactor = BLEND_FACTOR_CAST(BlendFactor::ZERO);
     colorBlendAttachment.dstAlphaBlendFactor = BLEND_FACTOR_CAST(BlendFactor::ONE);
-    colorBlendAttachment.alphaBlendOp =  BLEND_OP_CAST(BlendOp::ADD);
+    colorBlendAttachment.alphaBlendOp = BLEND_OP_CAST(BlendOp::ADD);
     colorBlendAttachment.colorWriteMask = COLOR_COMPONENT_CAST(ColorComponent::ALL);
 
     VkPipelineColorBlendStateCreateInfo colorBlendStateInfo = {};
@@ -81,7 +80,7 @@ void SceneMandelbrotSetGen::Init()
 
     mRasterPipeline->pColorBlendState = colorBlendStateInfo;
 
-    mRasterPass = std::make_unique<RasterPass>();
+    mRasterPass = std::make_unique<RasterPass>(App::Instance().GetGraphicsContext()->GetSwapChain()->GetImages().size());
     mRasterPass->RecordCommand([&](RasterCommandBuffer *rasterCmd, uint32_t frameIdx)
                                {
                                    rasterCmd->BeginRenderPass(App::Instance().GetGraphicsContext()->GetSwapChain()->GetDefaultRenderPass()->GetHandle(),
@@ -93,8 +92,7 @@ void SceneMandelbrotSetGen::Init()
                                    rasterCmd->SetViewport(mRasterPipeline->GetViewport(0));
                                    rasterCmd->BindPipeline(mRasterPipeline.get());
                                    rasterCmd->Draw(3, 1, 0, 0);
-                                   rasterCmd->EndRenderPass();
-                               });
+                                   rasterCmd->EndRenderPass(); });
 }
 
 void SceneMandelbrotSetGen::Update()

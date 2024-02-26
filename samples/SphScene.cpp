@@ -56,19 +56,12 @@ void SphScene::Init()
 
 	mRasterPipeline->pColorBlendState = colorBlendStateInfo;
 
-	mRasterCommandBuffers = App::Instance().GetGraphicsContext()->GetDevice()->GetRasterCommandPool()->CreatePrimaryCommandBuffers(App::Instance().GetGraphicsContext()->GetSwapChain()->GetImageViews().size());
+	auto frameCount = App::Instance().GetGraphicsContext()->GetSwapChain()->GetImages().size();
 
-	mImageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-	mRenderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-	mInFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
-	mImagesInFlight.resize(App::Instance().GetGraphicsContext()->GetSwapChain()->GetImages().size(), nullptr);
-
-	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
-	{
-		mImageAvailableSemaphores[i] = App::Instance().GetGraphicsContext()->GetDevice()->CreateSemaphore();
-		mRenderFinishedSemaphores[i] = App::Instance().GetGraphicsContext()->GetDevice()->CreateSemaphore();
-		mInFlightFences[i] = App::Instance().GetGraphicsContext()->GetDevice()->CreateFence(FenceStatus::SIGNALED);
-	}
+	mRasterCommandBuffers = App::Instance().GetGraphicsContext()->GetDevice()->GetRasterCommandPool()->CreatePrimaryCommandBuffers(frameCount);
+	mImageAvailableSemaphores = App::Instance().GetGraphicsContext()->GetDevice()->CreateSemaphores(frameCount);
+	mRenderFinishedSemaphores = App::Instance().GetGraphicsContext()->GetDevice()->CreateSemaphores(frameCount);
+	mInFlightFences = App::Instance().GetGraphicsContext()->GetDevice()->CreateFences(frameCount,FenceStatus::SIGNALED);
 
 	mComputeDescriptorTable = std::make_unique<DescriptorTable>(*App::Instance().GetGraphicsContext()->GetDevice());
 	mComputeDescriptorTable->AddLayoutBinding(0, 1, DescriptorType::STORAGE_BUFFER, ShaderStage::COMPUTE);
@@ -130,6 +123,7 @@ void SphScene::Init()
 																					   VK_SUBPASS_CONTENTS_INLINE);
 
 											 mRasterCommandBuffers[i]->SetViewport(mRasterPipeline->GetViewport(0));
+											 mRasterCommandBuffers[i]->SetScissor(mRasterPipeline->GetScissor(0));
 											 mRasterCommandBuffers[i]->BindPipeline(mRasterPipeline.get());
 											 mRasterCommandBuffers[i]->BindVertexBuffers(0, 1, {mPositionBuffer.get()});
 											 mRasterCommandBuffers[i]->Draw(PARTICLE_NUM, 1, 0, 0);
@@ -220,10 +214,7 @@ void SphScene::Render()
 	App::Instance().GetGraphicsContext()->GetSwapChain()->AcquireNextImage(mImageAvailableSemaphores[currentFrame].get());
 	uint32_t swapChainImageIdx = App::Instance().GetGraphicsContext()->GetSwapChain()->GetNextImageIdx();
 
-	if (mImagesInFlight[swapChainImageIdx] != nullptr)
-		mImagesInFlight[swapChainImageIdx]->Wait(VK_TRUE, UINT64_MAX);
-	mImagesInFlight[swapChainImageIdx] = mInFlightFences[currentFrame].get();
-
+	mInFlightFences[currentFrame]->Wait();
 	mInFlightFences[currentFrame]->Reset();
 
 	mRasterCommandBuffers[swapChainImageIdx]->Submit({PipelineStage::COLOR_ATTACHMENT_OUTPUT}, {mImageAvailableSemaphores[currentFrame].get()}, {mRenderFinishedSemaphores[currentFrame].get()}, mInFlightFences[currentFrame].get());
@@ -232,7 +223,7 @@ void SphScene::Render()
 
 	App::Instance().GetGraphicsContext()->GetDevice()->GetPresentQueue()->WaitIdle();
 
-	currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+	currentFrame = (currentFrame + 1) % App::Instance().GetGraphicsContext()->GetSwapChain()->GetImages().size();
 }
 
 void SphScene::InitParticleData(std::array<Vector2f, PARTICLE_NUM> initParticlePosition)

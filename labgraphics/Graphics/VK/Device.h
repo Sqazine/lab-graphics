@@ -2,7 +2,7 @@
 #include <vulkan/vulkan.h>
 #include <memory>
 #include "Queue.h"
-#include "VK/Instance.h"
+#include "Instance.h"
 #include "Shader.h"
 #include "SwapChain.h"
 #include "Buffer.h"
@@ -59,7 +59,9 @@ public:
 	Shader *CreateShader(ShaderStage type, const std::vector<char> &src);
 	std::unique_ptr<SwapChain> CreateSwapChain();
 	std::unique_ptr<Fence> CreateFence(FenceStatus status = FenceStatus::UNSIGNALED) const;
+	std::vector<std::unique_ptr<Fence>> CreateFences(size_t count, FenceStatus status = FenceStatus::UNSIGNALED) const;
 	std::unique_ptr<Semaphore> CreateSemaphore();
+	std::vector<std::unique_ptr<Semaphore>> CreateSemaphores(size_t count);
 
 	std::unique_ptr<CpuImage2D> CreateCpuImage2D(uint32_t width, uint32_t height, Format format, ImageTiling tiling);
 	std::unique_ptr<GpuImage2D> CreateGpuImage2D(uint32_t width, uint32_t height, Format format, ImageTiling tiling);

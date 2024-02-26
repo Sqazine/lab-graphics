@@ -4,12 +4,11 @@
 #include "Graphics/VK/CommandBuffer.h"
 #include "Graphics/VK/SyncObject.h"
 #include "Graphics/VK/Pipeline.h"
-#define MAX_FRAMES_IN_FLIGHT 2
 
 class RasterPass
 {
 public:
-    RasterPass();
+    RasterPass(size_t inFlightFrameCount);
     ~RasterPass();
     void Render();
 
@@ -20,5 +19,6 @@ private:
     std::vector<std::unique_ptr<Semaphore>> mImageAvailableSemaphores;
     std::vector<std::unique_ptr<Semaphore>> mRenderFinishedSemaphores;
     std::vector<std::unique_ptr<Fence>> mInFlightFences;
+    size_t mInFlightFrameCount;
     size_t mCurFrame = 0;
 };

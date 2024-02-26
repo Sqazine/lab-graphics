@@ -14,8 +14,6 @@
 #define WORK_GROUP_SIZE 128
 #define WORK_GROUP_NUM ((PARTICLE_NUM + WORK_GROUP_SIZE - 1) / WORK_GROUP_SIZE)
 
-#define MAX_FRAMES_IN_FLIGHT 2
-
 class SphScene : public Scene
 {
 public:
@@ -38,7 +36,6 @@ private:
 	std::vector<std::unique_ptr<Semaphore>> mImageAvailableSemaphores;
 	std::vector<std::unique_ptr<Semaphore>> mRenderFinishedSemaphores;
 	std::vector<std::unique_ptr<Fence>> mInFlightFences;
-	std::vector<Fence *> mImagesInFlight;
 	size_t currentFrame = 0;
 
 	std::unique_ptr<DescriptorTable> mComputeDescriptorTable;

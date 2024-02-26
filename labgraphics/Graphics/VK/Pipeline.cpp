@@ -185,6 +185,11 @@ const VkViewport &RasterPipeline::GetViewport(uint32_t i)
 	return mViewportCache.at(i);
 }
 
+const VkRect2D &RasterPipeline::GetScissor(uint32_t i)
+{
+	return mScissorCache.at(i);
+}
+
 RasterPipeline &RasterPipeline::SetPipelineLayout(PipelineLayout *layout)
 {
 	mLayout = layout;

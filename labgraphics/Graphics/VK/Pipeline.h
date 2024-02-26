@@ -64,6 +64,7 @@ public:
 	RasterPipeline &SetDepthBiasSlopeFactor(float v);
 
 	const VkViewport &GetViewport(uint32_t i);
+	const VkRect2D &GetScissor(uint32_t i);
 
 	RasterPipeline &SetSampleCount(SampleCount msaa);
 	RasterPipeline &SetAlphaToCoverageEnable(bool enable);

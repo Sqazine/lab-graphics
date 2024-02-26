@@ -214,9 +214,25 @@ std::unique_ptr<Fence> Device::CreateFence(FenceStatus status) const
     return std::move(std::make_unique<Fence>(*this, status));
 }
 
+std::vector<std::unique_ptr<Fence>> Device::CreateFences(size_t count, FenceStatus status) const
+{
+     std::vector<std::unique_ptr<Fence>> result(count);
+     for (auto& e : result)
+         e = std::move(CreateFence(status));
+     return result;
+}
+
 std::unique_ptr<Semaphore> Device::CreateSemaphore()
 {
     return std::move(std::make_unique<Semaphore>(*this));
+}
+
+std::vector<std::unique_ptr<Semaphore>> Device::CreateSemaphores(size_t count)
+{
+	std::vector<std::unique_ptr<Semaphore>> result(count);
+	for (auto& e : result)
+		e = std::move(CreateSemaphore());
+	return result;
 }
 
 std::unique_ptr<CpuImage2D> Device::CreateCpuImage2D(uint32_t width, uint32_t height, Format format, ImageTiling tiling)
