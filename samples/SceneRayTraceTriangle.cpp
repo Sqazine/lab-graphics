@@ -42,12 +42,78 @@ void SceneRayTraceTriangle::Init()
 		.AddRayCallableShader(App::Instance().GetGraphicsContext()->GetDevice()->CreateShader(ShaderStage::CALLABLE, rayCallableShaderSrc))
 		.SetPipelineLayout(mPipelineLayout.get());
 
-	mSemaphoreImageAvailable = App::Instance().GetGraphicsContext()->GetDevice()->CreateSemaphore();
-	mSemaphoreRenderAvailable = App::Instance().GetGraphicsContext()->GetDevice()->CreateSemaphore();
+	std::cout << "Creating ray tracing pass.." << std::endl;
 
-	std::cout << "Recording frame commands.." << std::endl;
+	auto inFlightFrameCount = (int32_t)App::Instance().GetGraphicsContext()->GetSwapChain()->GetImages().size();
+	mRayTracePass = std::make_unique<RayTracePass>(inFlightFrameCount);
 
-	mCommandBuffers = App::Instance().GetGraphicsContext()->GetDevice()->GetRayTraceCommandPool()->CreatePrimaryCommandBuffers(App::Instance().GetGraphicsContext()->GetSwapChain()->GetImageViews().size());
+	mRayTracePass->RecordAllCommands([&](RayTraceCommandBuffer *rayTraceCmd, size_t frameIdx)
+									 {
+										auto swapChainImage= App::Instance().GetGraphicsContext()->GetSwapChain()->GetImage(frameIdx);
+
+										VkImageSubresourceRange subResourceRange{};
+										subResourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+										subResourceRange.baseMipLevel = 0;
+										subResourceRange.levelCount = 1;
+										subResourceRange.baseArrayLayer = 0;
+										subResourceRange.layerCount = 1;
+
+										auto windowExtent = App::Instance().GetWindow()->GetExtent();
+
+										VkImageCopy copyRegion{};
+										copyRegion.srcOffset = {0, 0, 0};
+										copyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+										copyRegion.srcSubresource.mipLevel = 0;
+										copyRegion.srcSubresource.layerCount = 1;
+										copyRegion.srcSubresource.baseArrayLayer = 0;
+										copyRegion.dstOffset = {0, 0, 0};
+										copyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+										copyRegion.dstSubresource.mipLevel = 0;
+										copyRegion.dstSubresource.layerCount = 1;
+										copyRegion.dstSubresource.baseArrayLayer = 0;
+										copyRegion.extent.depth = 1;
+										copyRegion.extent.width = windowExtent.x;
+										copyRegion.extent.height = windowExtent.y;
+
+										rayTraceCmd->ImageBarrier(mOffscreenImage2D->GetHandle(),
+											Access::NONE,
+											Access::SHADER_WRITE,
+											ImageLayout::UNDEFINED,
+											ImageLayout::GENERAL,
+											subResourceRange);
+
+										rayTraceCmd->BindPipeline(mRayTracePipeline.get());
+
+										rayTraceCmd->BindDescriptorSets(mPipelineLayout.get(), 0, { mDescriptorSet});
+
+										rayTraceCmd->TraceRaysKHR(mRayTracePipeline->GetSBT(),  windowExtent.x,  windowExtent.y, 1);
+
+										rayTraceCmd->ImageBarrier(swapChainImage,
+											Access::NONE,
+											Access::TRANSFER_WRITE,
+											ImageLayout::UNDEFINED,
+											ImageLayout::TRANSFER_DST_OPTIMAL,
+											subResourceRange);
+
+										rayTraceCmd->ImageBarrier(mOffscreenImage2D->GetHandle(),
+											Access::SHADER_WRITE,
+											Access::TRANSFER_READ,
+											ImageLayout::GENERAL,
+											ImageLayout::TRANSFER_SRC_OPTIMAL,
+											subResourceRange);
+
+										rayTraceCmd->CopyImage(mOffscreenImage2D->GetHandle(),
+											ImageLayout::TRANSFER_SRC_OPTIMAL,
+											swapChainImage,
+											ImageLayout::TRANSFER_DST_OPTIMAL,
+											copyRegion);
+
+										rayTraceCmd->ImageBarrier(swapChainImage,
+											Access::NONE,
+											Access::TRANSFER_WRITE,
+											ImageLayout::TRANSFER_DST_OPTIMAL,
+											ImageLayout::PRESENT_SRC_KHR,
+											subResourceRange);  });
 }
 void SceneRayTraceTriangle::ProcessInput()
 {
@@ -57,83 +123,7 @@ void SceneRayTraceTriangle::Update()
 }
 void SceneRayTraceTriangle::Render()
 {
-	App::Instance().GetGraphicsContext()->GetSwapChain()->AcquireNextImage(mSemaphoreImageAvailable.get());
-
-	VkImage swapChainImage = App::Instance().GetGraphicsContext()->GetSwapChain()->GetImage(App::Instance().GetGraphicsContext()->GetSwapChain()->GetNextImageIdx());
-	auto commandBuffer = mCommandBuffers[App::Instance().GetGraphicsContext()->GetSwapChain()->GetNextImageIdx()].get();
-
-	commandBuffer->Reset();
-
-	VkImageSubresourceRange subResourceRange{};
-	subResourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	subResourceRange.baseMipLevel = 0;
-	subResourceRange.levelCount = 1;
-	subResourceRange.baseArrayLayer = 0;
-	subResourceRange.layerCount = 1;
-
-	auto windowExtent = App::Instance().GetWindow()->GetExtent();
-
-	VkImageCopy copyRegion{};
-	copyRegion.srcOffset = {0, 0, 0};
-	copyRegion.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	copyRegion.srcSubresource.mipLevel = 0;
-	copyRegion.srcSubresource.layerCount = 1;
-	copyRegion.srcSubresource.baseArrayLayer = 0;
-	copyRegion.dstOffset = {0, 0, 0};
-	copyRegion.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	copyRegion.dstSubresource.mipLevel = 0;
-	copyRegion.dstSubresource.layerCount = 1;
-	copyRegion.dstSubresource.baseArrayLayer = 0;
-	copyRegion.extent.depth = 1;
-	copyRegion.extent.width = windowExtent.x;
-	copyRegion.extent.height = windowExtent.y;
-
-	commandBuffer->Record([&]()
-						  {
-		commandBuffer->ImageBarrier(mOffscreenImage2D->GetHandle(),
-			Access::NONE,
-			Access::SHADER_WRITE,
-			ImageLayout::UNDEFINED,
-			ImageLayout::GENERAL,
-			subResourceRange);
-
-		commandBuffer->BindPipeline(mRayTracePipeline.get());
-
-		commandBuffer->BindDescriptorSets(mPipelineLayout.get(), 0, { mDescriptorSet});
-
-		commandBuffer->TraceRaysKHR(mRayTracePipeline->GetSBT(),  windowExtent.x,  windowExtent.y, 1);
-
-		commandBuffer->ImageBarrier(swapChainImage,
-			Access::NONE,
-			Access::TRANSFER_WRITE,
-			ImageLayout::UNDEFINED,
-			ImageLayout::TRANSFER_DST_OPTIMAL,
-			subResourceRange);
-
-		commandBuffer->ImageBarrier(mOffscreenImage2D->GetHandle(),
-			Access::SHADER_WRITE,
-			Access::TRANSFER_READ,
-			ImageLayout::GENERAL,
-			ImageLayout::TRANSFER_SRC_OPTIMAL,
-			subResourceRange);
-
-		commandBuffer->CopyImage(mOffscreenImage2D->GetHandle(),
-			ImageLayout::TRANSFER_SRC_OPTIMAL,
-			swapChainImage,
-			ImageLayout::TRANSFER_DST_OPTIMAL,
-			copyRegion);
-
-		commandBuffer->ImageBarrier(swapChainImage,
-			Access::NONE,
-			Access::TRANSFER_WRITE,
-			ImageLayout::TRANSFER_DST_OPTIMAL,
-			ImageLayout::PRESENT_SRC_KHR,
-			subResourceRange); });
-
-
-	commandBuffer->Submit({PipelineStage::COLOR_ATTACHMENT_OUTPUT},{mSemaphoreImageAvailable.get()},{mSemaphoreRenderAvailable.get()});
-
-	App::Instance().GetGraphicsContext()->GetSwapChain()->Present({mSemaphoreRenderAvailable.get()});
+	mRayTracePass->Render();
 }
 
 void SceneRayTraceTriangle::CleanUp()

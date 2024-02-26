@@ -324,7 +324,7 @@ void RasterCommandBuffer::Submit(const std::vector<PipelineStage> &waitStages, c
 	submitInfo.pCommandBuffers = &mHandle;
 	submitInfo.waitSemaphoreCount = rawWait.size();
 	submitInfo.pWaitSemaphores = rawWait.data();
-	submitInfo.pWaitDstStageMask=rawWaitStages.data();
+	submitInfo.pWaitDstStageMask = rawWaitStages.data();
 	submitInfo.signalSemaphoreCount = rawSignal.size();
 	submitInfo.pSignalSemaphores = rawSignal.data();
 
@@ -442,12 +442,16 @@ void RayTraceCommandBuffer::Submit(const std::vector<PipelineStage> &waitStages,
 {
 	std::vector<VkSemaphore> rawSignal(signalSemaphores.size());
 	std::vector<VkSemaphore> rawWait(waitSemaphores.size());
+	std::vector<VkPipelineStageFlags> rawWaitStages(waitStages.size());
 
 	for (size_t i = 0; i < rawSignal.size(); ++i)
 		rawSignal[i] = signalSemaphores[i]->GetHandle();
 
 	for (size_t i = 0; i < rawWait.size(); ++i)
 		rawWait[i] = waitSemaphores[i]->GetHandle();
+
+	for (size_t i = 0; i < rawWaitStages.size(); ++i)
+		rawWaitStages[i] = PIPELINE_STAGE_CAST(waitStages[i]);
 
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -458,6 +462,7 @@ void RayTraceCommandBuffer::Submit(const std::vector<PipelineStage> &waitStages,
 	submitInfo.pWaitSemaphores = rawWait.data();
 	submitInfo.signalSemaphoreCount = rawSignal.size();
 	submitInfo.pSignalSemaphores = rawSignal.data();
+	submitInfo.pWaitDstStageMask = rawWaitStages.data();
 
 	if (fence == nullptr)
 	{

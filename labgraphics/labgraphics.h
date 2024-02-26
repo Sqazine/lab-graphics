@@ -20,6 +20,7 @@
 #include "Camera.h"
 #include "Scene.h"
 #include "RasterPass.h"
+#include "RayTracePass.h"
 #include "InputSystem.h"
 #include "Logger.h"
 #include "Timer.h"

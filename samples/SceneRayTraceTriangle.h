@@ -120,14 +120,11 @@ public:
     void CleanUp() override;
 
 private:
-    std::unique_ptr<RayTracePipeline> mRayTracePipeline;
-
-    std::unique_ptr<Semaphore> mSemaphoreImageAvailable;
-    std::unique_ptr<Semaphore> mSemaphoreRenderAvailable;
-
     std::unique_ptr<Image2D> mOffscreenImage2D;
 
-    std::vector<std::unique_ptr<RayTraceCommandBuffer>> mCommandBuffers;
+	std::unique_ptr<RayTracePass> mRayTracePass;
+
+    std::unique_ptr<RayTracePipeline> mRayTracePipeline;
 
     std::unique_ptr<BLAS> mBlas;
     std::unique_ptr<TLAS> mTlas;
