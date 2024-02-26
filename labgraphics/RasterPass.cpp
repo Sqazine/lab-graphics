@@ -14,7 +14,7 @@ RasterPass::RasterPass(size_t inFlightFrameCount)
     mRasterCommandBuffers = App::Instance().GetGraphicsContext()->GetDevice()->GetRasterCommandPool()->CreatePrimaryCommandBuffers(mInFlightFrameCount);
     mImageAvailableSemaphores = App::Instance().GetGraphicsContext()->GetDevice()->CreateSemaphores(mInFlightFrameCount);
     mRenderFinishedSemaphores = App::Instance().GetGraphicsContext()->GetDevice()->CreateSemaphores(mInFlightFrameCount);
-    mInFlightFences = App::Instance().GetGraphicsContext()->GetDevice()->CreateFences(mInFlightFrameCount,FenceStatus::SIGNALED);
+    mInFlightFences = App::Instance().GetGraphicsContext()->GetDevice()->CreateFences(mInFlightFrameCount, FenceStatus::SIGNALED);
 }
 
 RasterPass::~RasterPass()
@@ -36,11 +36,17 @@ void RasterPass::Render()
     mCurFrame = (mCurFrame + 1) % mInFlightFrameCount;
 }
 
-void RasterPass::RecordCommand(std::function<void(RasterCommandBuffer *, uint32_t)> fn)
+void RasterPass::RecordAllCommands(std::function<void(RasterCommandBuffer *, size_t)> fn)
 {
     for (size_t i = 0; i < mRasterCommandBuffers.size(); ++i)
     {
         mRasterCommandBuffers[i]->Record([&]()
                                          { fn(mRasterCommandBuffers[i].get(), i); });
     }
+}
+
+void RasterPass::RecordCurrentCommand(std::function<void(RasterCommandBuffer *, size_t)> fn)
+{
+    mRasterCommandBuffers[mCurFrame]->Record([&]()
+                                             { fn(mRasterCommandBuffers[mCurFrame].get(), mCurFrame); });
 }

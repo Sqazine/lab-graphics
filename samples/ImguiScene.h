@@ -21,11 +21,5 @@ private:
 
     std::unique_ptr<DescriptorTable> mDescriptorTable;
 
-    std::vector<std::unique_ptr<RasterCommandBuffer>> mRasterCommandBuffers;
-
-    std::vector<std::unique_ptr<Semaphore>> mImageAvailableSemaphores;
-    std::vector<std::unique_ptr<Semaphore>> mRenderFinishedSemaphores;
-    std::vector<std::unique_ptr<Fence>> mInFlightFences;
-    int32_t mInFlightFrameCount=0;
-    size_t currentFrame = 0;
+    std::unique_ptr<RasterPass> mImguiPass;
 };

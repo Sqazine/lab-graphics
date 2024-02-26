@@ -81,7 +81,7 @@ void SceneMandelbrotSetGen::Init()
     mRasterPipeline->pColorBlendState = colorBlendStateInfo;
 
     mRasterPass = std::make_unique<RasterPass>(App::Instance().GetGraphicsContext()->GetSwapChain()->GetImages().size());
-    mRasterPass->RecordCommand([&](RasterCommandBuffer *rasterCmd, uint32_t frameIdx)
+    mRasterPass->RecordAllCommands([&](RasterCommandBuffer *rasterCmd, uint32_t frameIdx)
                                {
                                    rasterCmd->BeginRenderPass(App::Instance().GetGraphicsContext()->GetSwapChain()->GetDefaultRenderPass()->GetHandle(),
                                                               App::Instance().GetGraphicsContext()->GetSwapChain()->GetDefaultFrameBuffers()[frameIdx]->GetHandle(),

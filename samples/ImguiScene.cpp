@@ -25,12 +25,8 @@ void SceneImgui::Init()
     mDescriptorTable->GetPool()->AddPoolDesc(DescriptorType::STORAGE_BUFFER_DYNAMIC, 1000);
     mDescriptorTable->GetPool()->AddPoolDesc(DescriptorType::INPUT_ATTACHMENT, 1000);
 
-    mInFlightFrameCount = (int32_t)App::Instance().GetGraphicsContext()->GetSwapChain()->GetImages().size();
-
-    mRasterCommandBuffers = App::Instance().GetGraphicsContext()->GetDevice()->GetRasterCommandPool()->CreatePrimaryCommandBuffers(mInFlightFrameCount);
-    mImageAvailableSemaphores=App::Instance().GetGraphicsContext()->GetDevice()->CreateSemaphores(mInFlightFrameCount);
-    mRenderFinishedSemaphores=App::Instance().GetGraphicsContext()->GetDevice()->CreateSemaphores(mInFlightFrameCount);
-    mInFlightFences=App::Instance().GetGraphicsContext()->GetDevice()->CreateFences(mInFlightFrameCount,FenceStatus::SIGNALED);
+    auto inFlightFrameCount = (int32_t)App::Instance().GetGraphicsContext()->GetSwapChain()->GetImages().size();
+    mImguiPass = std::make_unique<RasterPass>(inFlightFrameCount);
 
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
@@ -146,32 +142,17 @@ void SceneImgui::RenderUI()
     const bool is_minimized = (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f);
     if (!is_minimized)
     {
-        App::Instance().GetGraphicsContext()->GetSwapChain()->AcquireNextImage(mImageAvailableSemaphores[currentFrame].get());
-
-        auto swapChainImageIdx = App::Instance().GetGraphicsContext()->GetSwapChain()->GetNextImageIdx();
-
-        mInFlightFences[currentFrame]->Wait();
-        mInFlightFences[currentFrame]->Reset();
-
-        mRasterCommandBuffers[currentFrame]->Record([&]()
-                                                         {
-                                                          
-                                                             mRasterCommandBuffers[currentFrame]->BeginRenderPass(App::Instance().GetGraphicsContext()->GetSwapChain()->GetDefaultRenderPass()->GetHandle(),
-                                                                                                                       App::Instance().GetGraphicsContext()->GetSwapChain()->GetDefaultFrameBuffers()[swapChainImageIdx]->GetHandle(),
-                                                                                                                       App::Instance().GetGraphicsContext()->GetSwapChain()->GetRenderArea(),
-                                                                                                                       {VkClearValue{mClearColor.x, mClearColor.y, mClearColor.z, mClearColor.w}},
-                                                                                                                       VK_SUBPASS_CONTENTS_INLINE);
-                                                             // Record dear imgui primitives into command buffer
-                                                             ImGui_ImplVulkan_RenderDrawData(draw_data, mRasterCommandBuffers[currentFrame]->GetHandle());
-                                                             mRasterCommandBuffers[currentFrame]->EndRenderPass(); });
-
-        mRasterCommandBuffers[currentFrame]->Submit({PipelineStage::COLOR_ATTACHMENT_OUTPUT}, {mImageAvailableSemaphores[currentFrame].get()}, {mRenderFinishedSemaphores[currentFrame].get()}, mInFlightFences[currentFrame].get());
-
-        App::Instance().GetGraphicsContext()->GetSwapChain()->Present({mRenderFinishedSemaphores[currentFrame].get()});
-
-        App::Instance().GetGraphicsContext()->GetDevice()->GetPresentQueue()->WaitIdle();
-
-        currentFrame = (currentFrame + 1) % mInFlightFrameCount;
+        mImguiPass->RecordCurrentCommand([&](RasterCommandBuffer *rasterCmd,size_t curFrameIdx)
+                                  {
+            rasterCmd->BeginRenderPass(App::Instance().GetGraphicsContext()->GetSwapChain()->GetDefaultRenderPass()->GetHandle(),
+            App::Instance().GetGraphicsContext()->GetSwapChain()->GetDefaultFrameBuffers()[curFrameIdx]->GetHandle(),
+            App::Instance().GetGraphicsContext()->GetSwapChain()->GetRenderArea(),
+            {VkClearValue{mClearColor.x, mClearColor.y, mClearColor.z,   mClearColor.w}},
+            VK_SUBPASS_CONTENTS_INLINE);
+            // Record dear imgui primitives into command buffer
+            ImGui_ImplVulkan_RenderDrawData(draw_data, rasterCmd->GetHandle());
+            rasterCmd->EndRenderPass(); });
+        mImguiPass->Render();
     }
 }
 

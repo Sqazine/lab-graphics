@@ -12,8 +12,8 @@ public:
     ~RasterPass();
     void Render();
 
-    void RecordCommand(std::function<void(RasterCommandBuffer *,uint32_t)> fn);
-
+    void RecordAllCommands(std::function<void(RasterCommandBuffer *,size_t)> fn);
+    void RecordCurrentCommand(std::function<void(RasterCommandBuffer *,size_t)> fn);
 private:
     std::vector<std::unique_ptr<RasterCommandBuffer>> mRasterCommandBuffers;
     std::vector<std::unique_ptr<Semaphore>> mImageAvailableSemaphores;

@@ -31,12 +31,7 @@ private:
 	std::unique_ptr<PipelineLayout> mRasterPipelineLayout;
 	std::unique_ptr<RasterPipeline> mRasterPipeline;
 
-	std::vector<std::unique_ptr<RasterCommandBuffer>> mRasterCommandBuffers;
-
-	std::vector<std::unique_ptr<Semaphore>> mImageAvailableSemaphores;
-	std::vector<std::unique_ptr<Semaphore>> mRenderFinishedSemaphores;
-	std::vector<std::unique_ptr<Fence>> mInFlightFences;
-	size_t currentFrame = 0;
+	std::unique_ptr<RasterPass> mSphRasterPass;
 
 	std::unique_ptr<DescriptorTable> mComputeDescriptorTable;
 	DescriptorSet* mComputeDescriptorSet;
