@@ -67,11 +67,9 @@ private:
 	class RtxRayTraceScene *mScene;
 	
 	std::vector<std::unique_ptr<RayTraceCommandBuffer>> mCommandBuffers;
-
 	std::vector<std::unique_ptr<Semaphore>> mImageAvailableSemaphores;
 	std::vector<std::unique_ptr<Semaphore>> mRenderFinishedSemaphores;
 	std::vector<std::unique_ptr<Fence>> mInFlightFences;
-
 	size_t mCurFrame;
 
 	RenderState mState;

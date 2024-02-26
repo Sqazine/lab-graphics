@@ -34,6 +34,5 @@ private:
 	std::unique_ptr<Buffer> mComputeImgBuffer;
 
 	std::unique_ptr<RasterPipeline> mRasterPipeline;
-
 	std::unique_ptr<RasterPass> mRasterPass;
 };
