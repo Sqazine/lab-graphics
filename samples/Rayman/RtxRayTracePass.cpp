@@ -28,13 +28,10 @@
 #include "VK/CommandPool.h"
 
 RtxRayTracePass::RtxRayTracePass(const Instance &instance, Device &device)
-	: mDevice(device), mState(RenderState::FINAL), mPrevState(mState), mCurFrame(0)
+	: mDevice(device), mState(RenderState::FINAL), mPrevState(mState)
 {
-	mInFlightFences.emplace_back(new Fence(mDevice, FenceStatus::SIGNALED));
-	mImageAvailableSemaphores.emplace_back(new Semaphore(mDevice));
-	mRenderFinishedSemaphores.emplace_back(new Semaphore(mDevice));
-
-	mCommandBuffers = mDevice.GetRayTraceCommandPool()->CreatePrimaryCommandBuffers(App::Instance().GetGraphicsContext()->GetSwapChain()->GetImages().size());
+	auto frameCount = App::Instance().GetGraphicsContext()->GetSwapChain()->GetImages().size();
+	mRayTracePass = std::make_unique<RayTracePass>(frameCount);
 
 	for (const auto &_ : App::Instance().GetGraphicsContext()->GetSwapChain()->GetImageViews())
 		mUniformBuffers.emplace_back(mDevice.CreateUniformBuffer<Uniform>());
@@ -56,10 +53,6 @@ RtxRayTracePass::RtxRayTracePass(const Instance &instance, Device &device)
 RtxRayTracePass::~RtxRayTracePass()
 {
 	mBLASs.clear();
-
-	mInFlightFences.clear();
-	mRenderFinishedSemaphores.clear();
-	mImageAvailableSemaphores.clear();
 }
 
 Device &RtxRayTracePass::GetDevice() const
@@ -195,52 +188,32 @@ void RtxRayTracePass::BuildPipeline()
 
 void RtxRayTracePass::Render()
 {
-	auto &inFlightFence = mInFlightFences[mCurFrame];
-
-	inFlightFence->Wait();
-
-	auto result = vkAcquireNextImageKHR(mDevice.GetHandle(), App::Instance().GetGraphicsContext()->GetSwapChain()->GetHandle(), UINT64_MAX, mImageAvailableSemaphores[mCurFrame]->GetHandle(), nullptr, &mImageIndex);
-
-	if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
-	{
-		std::cout << "[ERROR] Failed to acquire next image" << std::endl;
-		exit(1);
-	}
-
 	if (mScene->Get()->GetCamera().HaveUpdate())
 		ResetAccumulation();
+	mRayTracePass->RecordCurrentCommand([&](RayTraceCommandBuffer *rayTraceCmd, size_t frameIdx)
+										{
+											const auto extent = App::Instance().GetGraphicsContext()->GetSwapChain()->GetExtent();
+									
+											rayTraceCmd->ImageBarrier( mAccumulationImage->GetHandle(),Access::NONE,Access::SHADER_WRITE,ImageLayout::UNDEFINED,ImageLayout::GENERAL,mAccumulationImage->GetView()->GetSubresourceRange());
+											rayTraceCmd->ImageBarrier( mOutputImage->GetHandle(),Access::NONE,Access::SHADER_WRITE,ImageLayout::UNDEFINED,ImageLayout::GENERAL,mOutputImage->GetView()->GetSubresourceRange());
+											rayTraceCmd->ImageBarrier( mNormalsImage->GetHandle(),Access::NONE,Access::SHADER_WRITE,ImageLayout::UNDEFINED,ImageLayout::GENERAL,mNormalsImage->GetView()->GetSubresourceRange());
+											rayTraceCmd->ImageBarrier( mPositionsImage->GetHandle(),Access::NONE,Access::SHADER_WRITE,ImageLayout::UNDEFINED,ImageLayout::GENERAL,mPositionsImage->GetView()->GetSubresourceRange());
+											rayTraceCmd->BindPipeline(mPipeline.get());
+											rayTraceCmd->BindDescriptorSets(mPipelineLayout.get(),0,{mDescriptorSets[frameIdx]});
+											rayTraceCmd->TraceRaysKHR(mPipeline->GetSBT(),extent.x,extent.y,1);
+											++mFrame;
+											if (mPostProcessType == PostProcessType::NONE)
+												Copy(rayTraceCmd, mOutputImage.get(), App::Instance().GetGraphicsContext()->GetSwapChain()->GetImages()[frameIdx]);
+											else
+											{
+												mPostProcessPass->Process((int32_t)mPostProcessType);
+												Copy(rayTraceCmd, mPostProcessPass->GetOutputImage(), App::Instance().GetGraphicsContext()->GetSwapChain()->GetImages()[frameIdx]);
+											}
 
-	inFlightFence->Reset();
+											UpdateUniformBuffer(frameIdx); 
+										});
 
-	const auto extent = App::Instance().GetGraphicsContext()->GetSwapChain()->GetExtent();
-	mCommandBuffers[mImageIndex]->Record([&]()
-										 {
-	mCommandBuffers[mImageIndex]->ImageBarrier( mAccumulationImage->GetHandle(),Access::NONE,Access::SHADER_WRITE,ImageLayout::UNDEFINED,ImageLayout::GENERAL,mAccumulationImage->GetView()->GetSubresourceRange());
-	mCommandBuffers[mImageIndex]->ImageBarrier( mOutputImage->GetHandle(),Access::NONE,Access::SHADER_WRITE,ImageLayout::UNDEFINED,ImageLayout::GENERAL,mOutputImage->GetView()->GetSubresourceRange());
-	mCommandBuffers[mImageIndex]->ImageBarrier( mNormalsImage->GetHandle(),Access::NONE,Access::SHADER_WRITE,ImageLayout::UNDEFINED,ImageLayout::GENERAL,mNormalsImage->GetView()->GetSubresourceRange());
-	mCommandBuffers[mImageIndex]->ImageBarrier( mPositionsImage->GetHandle(),Access::NONE,Access::SHADER_WRITE,ImageLayout::UNDEFINED,ImageLayout::GENERAL,mPositionsImage->GetView()->GetSubresourceRange());
-	mCommandBuffers[mImageIndex]->BindPipeline(mPipeline.get());
-	mCommandBuffers[mImageIndex]->BindDescriptorSets(mPipelineLayout.get(),0,{mDescriptorSets[mImageIndex]});
-	mCommandBuffers[mImageIndex]->TraceRaysKHR(mPipeline->GetSBT(),extent.x,extent.y,1);
-	++mFrame;
-	if (mPostProcessType == PostProcessType::NONE)
-		Copy(mCommandBuffers[mImageIndex].get(), mOutputImage.get(), App::Instance().GetGraphicsContext()->GetSwapChain()->GetImages()[mImageIndex]);
-	else
-	{
-		mPostProcessPass->Process((int32_t)mPostProcessType);
-		Copy(mCommandBuffers[mImageIndex].get(), mPostProcessPass->GetOutputImage(), App::Instance().GetGraphicsContext()->GetSwapChain()->GetImages()[mImageIndex]);
-	} });
-
-	UpdateUniformBuffer();
-
-	mCommandBuffers[mImageIndex]->Submit({PipelineStage::COLOR_ATTACHMENT_OUTPUT, PipelineStage::RAY_TRACING_SHADER},
-										 {mImageAvailableSemaphores[mCurFrame].get()},
-										 {mRenderFinishedSemaphores[mCurFrame].get()},
-										 inFlightFence.get());
-
-	App::Instance().GetGraphicsContext()->GetSwapChain()->Present({mRenderFinishedSemaphores[mCurFrame].get()});
-
-	mCurFrame = (mCurFrame + 1) % mInFlightFences.size();
+	mRayTracePass->Render();
 }
 
 void RtxRayTracePass::Update()
@@ -298,7 +271,7 @@ void RtxRayTracePass::CreateTLAS()
 	mTLAS = std::make_unique<TLAS>(mDevice, geometryInstances);
 }
 
-void RtxRayTracePass::UpdateUniformBuffer()
+void RtxRayTracePass::UpdateUniformBuffer(size_t frameIdx)
 {
 	Uniform uniform{};
 
@@ -310,7 +283,7 @@ void RtxRayTracePass::UpdateUniformBuffer()
 	uniform.hdrMultiplier = mScene->UseHDR() ? mScene->Get()->hdrMultiplier : 1.0f;
 	uniform.frame = mFrame;
 
-	mUniformBuffers[mImageIndex]->Set(uniform);
+	mUniformBuffers[frameIdx]->Set(uniform);
 }
 
 void RtxRayTracePass::SaveOutputImageToDisk()

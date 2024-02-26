@@ -73,26 +73,25 @@ public:
 	KeyboardState &GetKeyboard();
 	MouseState &GetMouse();
 
-	 bool IsWindowCloseButtonClick() const
-    {
-        return mIsWindowCloseButtonClick;
-    }
+	bool IsWindowCloseButtonClick() const
+	{
+		return mIsWindowCloseButtonClick;
+	}
 
-    bool IsWindowMaxButtonClick() const
-    {
-        return mIsWindowMaxButtonClick;
-    }
+	bool IsWindowMaxButtonClick() const
+	{
+		return mIsWindowMaxButtonClick;
+	}
 
-    bool IsWindowMinButtonClick() const
-    {
-        return mIsWindowMinButtonClick;
-    }
+	bool IsWindowMinButtonClick() const
+	{
+		return mIsWindowMinButtonClick;
+	}
 
-    bool IsWindowResize() const
-    {
-        return mIsWindowResize;
-    }
-
+	bool IsWindowResize() const
+	{
+		return mIsWindowResize;
+	}
 
 private:
 	InputSystem() = default;
@@ -108,8 +107,8 @@ private:
 	void ProcessInput();
 	void PreUpdate();
 
-	  bool mIsWindowCloseButtonClick;
-    bool mIsWindowMaxButtonClick;
-    bool mIsWindowMinButtonClick;
-    bool mIsWindowResize;
+	bool mIsWindowCloseButtonClick;
+	bool mIsWindowMaxButtonClick;
+	bool mIsWindowMinButtonClick;
+	bool mIsWindowResize;
 };

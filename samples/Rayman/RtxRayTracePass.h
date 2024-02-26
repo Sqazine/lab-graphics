@@ -57,7 +57,7 @@ public:
 	void CreateBLAS();
 	void CreateTLAS();
 
-	void UpdateUniformBuffer();
+	void UpdateUniformBuffer(size_t frameIdx);
 
 private:
 	void BuildPipeline();
@@ -66,11 +66,7 @@ private:
 	Device &mDevice;
 	class RtxRayTraceScene *mScene;
 	
-	std::vector<std::unique_ptr<RayTraceCommandBuffer>> mCommandBuffers;
-	std::vector<std::unique_ptr<Semaphore>> mImageAvailableSemaphores;
-	std::vector<std::unique_ptr<Semaphore>> mRenderFinishedSemaphores;
-	std::vector<std::unique_ptr<Fence>> mInFlightFences;
-	size_t mCurFrame;
+	std::unique_ptr<RayTracePass> mRayTracePass;
 
 	RenderState mState;
 	RenderState mPrevState;
@@ -100,6 +96,5 @@ private:
 	PostProcessType mPostProcessType = PostProcessType::NONE;
 
 	uint32_t mFrame = 0;
-	uint32_t mImageIndex = 0;
 
 };
