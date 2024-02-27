@@ -49,14 +49,14 @@ std::vector<VkPipelineShaderStageCreateInfo> RasterShaderGroup::GetShaderStages(
         result.emplace_back(mGeometryShader->GetPipelineStageInfo());
 
     result.emplace_back(mFragmentShader->GetPipelineStageInfo());
-    
+
     return result;
 }
 
 bool RasterShaderGroup::CheckLink()
 {
-    auto vertReflData=mVertexShader->GetReflectedData();
-    auto fragReflData=mFragmentShader->GetReflectedData();
+    auto vertReflData = mVertexShader->GetReflectedData();
+    auto fragReflData = mFragmentShader->GetReflectedData();
     return true;
 }
 
@@ -111,11 +111,11 @@ std::vector<VkPipelineShaderStageCreateInfo> RayTraceShaderGroup::GetShaderStage
 
     mShaderStages.emplace_back(mRayGenShader->GetPipelineStageInfo());
 
-    for (const auto &rayClosestHit : mRayClosestHitShaderList)
-        mShaderStages.emplace_back(rayClosestHit->GetPipelineStageInfo());
-
     for (const auto &rayMiss : mRayMissShaderList)
         mShaderStages.emplace_back(rayMiss->GetPipelineStageInfo());
+
+    for (const auto &rayClosestHit : mRayClosestHitShaderList)
+        mShaderStages.emplace_back(rayClosestHit->GetPipelineStageInfo());
 
     for (const auto &rayAnyHit : mRayAnyHitShaderList)
         mShaderStages.emplace_back(rayAnyHit->GetPipelineStageInfo());
@@ -161,40 +161,36 @@ const std::vector<VkRayTracingShaderGroupCreateInfoKHR> &RayTraceShaderGroup::Ge
 
 const std::vector<VkRayTracingShaderGroupCreateInfoKHR> &RayTraceShaderGroup::GetShaderGroups()
 {
-    mRayClosestHitShaderGroups.clear();
     mRayMissShaderGroups.clear();
+    mRayClosestHitShaderGroups.clear();
     mRayAnyHitShaderGroups.clear();
     mRayIntersectionShaderGroups.clear();
     mRayCallableShaderGroups.clear();
 
     mShaderGroups.clear();
 
-    mRayGenShaderGroup = CreateRayGenShaderGroup(0);
-    int32_t idx = 1;
+    int32_t idx = 0;
 
-    for (int32_t i = 0; i < mRayClosestHitShaderList.size(); ++i)
-        mRayClosestHitShaderGroups.emplace_back(CreateRayClosestHitShaderGroup(idx + i));
-    idx += mRayClosestHitShaderList.size();
+    mRayGenShaderGroup = CreateRayGenShaderGroup(idx++);
 
     for (int32_t i = 0; i < mRayMissShaderList.size(); ++i)
-        mRayMissShaderGroups.emplace_back(CreateRayMissShaderGroup(idx + i));
-    idx += mRayMissShaderList.size();
+        mRayMissShaderGroups.emplace_back(CreateRayMissShaderGroup(idx++));
+
+    for (int32_t i = 0; i < mRayClosestHitShaderList.size(); ++i)
+        mRayClosestHitShaderGroups.emplace_back(CreateRayClosestHitShaderGroup(idx++));
 
     for (int32_t i = 0; i < mRayAnyHitShaderList.size(); ++i)
-        mRayAnyHitShaderGroups.emplace_back(CreateRayAnyHitShaderGroup(idx + i));
-    idx += mRayAnyHitShaderList.size();
+        mRayAnyHitShaderGroups.emplace_back(CreateRayAnyHitShaderGroup(idx++));
 
     for (int32_t i = 0; i < mRayIntersectionShaderList.size(); ++i)
-        mRayIntersectionShaderGroups.emplace_back(CreateRayIntersectionShaderGroup(idx + i));
-    idx += mRayIntersectionShaderList.size();
+        mRayIntersectionShaderGroups.emplace_back(CreateRayIntersectionShaderGroup(idx++));
 
     for (int32_t i = 0; i < mRayCallableShaderList.size(); ++i)
-        mRayCallableShaderGroups.emplace_back(CreateRayCallableShaderGroup(idx + i));
-    idx += mRayCallableShaderList.size();
+        mRayCallableShaderGroups.emplace_back(CreateRayCallableShaderGroup(idx++));
 
     mShaderGroups.emplace_back(mRayGenShaderGroup);
-    mShaderGroups.insert(mShaderGroups.end(), mRayClosestHitShaderGroups.begin(), mRayClosestHitShaderGroups.end());
     mShaderGroups.insert(mShaderGroups.end(), mRayMissShaderGroups.begin(), mRayMissShaderGroups.end());
+    mShaderGroups.insert(mShaderGroups.end(), mRayClosestHitShaderGroups.begin(), mRayClosestHitShaderGroups.end());
     mShaderGroups.insert(mShaderGroups.end(), mRayAnyHitShaderGroups.begin(), mRayAnyHitShaderGroups.end());
     mShaderGroups.insert(mShaderGroups.end(), mRayIntersectionShaderGroups.begin(), mRayIntersectionShaderGroups.end());
     mShaderGroups.insert(mShaderGroups.end(), mRayCallableShaderGroups.begin(), mRayCallableShaderGroups.end());
@@ -249,9 +245,9 @@ VkRayTracingShaderGroupCreateInfoKHR RayTraceShaderGroup::CreateRayAnyHitShaderG
     VkRayTracingShaderGroupCreateInfoKHR rayAnyHitGroup{};
     rayAnyHitGroup.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
     rayAnyHitGroup.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR;
-    rayAnyHitGroup.generalShader = idx;
+    rayAnyHitGroup.generalShader = VK_SHADER_UNUSED_KHR;
     rayAnyHitGroup.closestHitShader = VK_SHADER_UNUSED_KHR;
-    rayAnyHitGroup.anyHitShader = VK_SHADER_UNUSED_KHR;
+    rayAnyHitGroup.anyHitShader = idx;
     rayAnyHitGroup.intersectionShader = VK_SHADER_UNUSED_KHR;
     return rayAnyHitGroup;
 }
