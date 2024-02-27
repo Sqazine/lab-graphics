@@ -40,10 +40,5 @@ private:
 	VkStridedDeviceAddressRegionKHR mRayIntersectionAddressRegion;
 	VkStridedDeviceAddressRegionKHR mRayCallableAddressRegion;
 
-	std::unique_ptr<Buffer> mRayGenBuffer;
-	std::unique_ptr<Buffer> mRayMissBuffer;
-	std::unique_ptr<Buffer> mRayClosestHitBuffer;
-	std::unique_ptr<Buffer> mRayAnyHitBuffer;
-	std::unique_ptr<Buffer> mRayIntersectionBuffer;
-	std::unique_ptr<Buffer> mRayCallableBuffer;
+	std::unique_ptr<Buffer> mSbtBuffer;
 };

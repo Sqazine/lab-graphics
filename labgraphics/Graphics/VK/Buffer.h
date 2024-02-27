@@ -4,16 +4,17 @@
 #include <string_view>
 #include "Utils.h"
 #include "Enum.h"
+#include "Logger.h"
 
 class Buffer
 {
 public:
-    Buffer( class Device &device,
+    Buffer(class Device &device,
            uint64_t size,
            BufferUsage usage,
            VkMemoryPropertyFlags properties);
 
-    Buffer( class Device &device,
+    Buffer(class Device &device,
            void *srcData,
            uint64_t size,
            BufferUsage usage,
@@ -30,11 +31,16 @@ public:
     VkDeviceOrHostAddressConstKHR GetVkAddress() const;
 
     void Fill(const void *data);
-    void Fill(size_t offset,size_t size, const void *data);
+    void Fill(size_t offset, size_t size, const void *data);
 
     template <typename T>
     T *Map(size_t offset, size_t size) const;
+
+    template <typename T>
+    T *MapWhole() const;
+
     void Unmap();
+
 protected:
     class Device &mDevice;
 
@@ -56,17 +62,25 @@ inline T *Buffer::Map(size_t offset, size_t size) const
     return data;
 }
 
-class CpuBuffer:public Buffer
+template <typename T>
+inline T *Buffer::MapWhole() const
+{
+    T *data;
+    VK_CHECK(vkMapMemory(mDevice.GetHandle(), mMemory, 0, mSize, 0, (void **)&data));
+    return data;
+}
+
+class CpuBuffer : public Buffer
 {
 public:
     CpuBuffer(class Device &device, void *srcData, uint64_t size, BufferUsage usage);
     CpuBuffer(class Device &device, uint64_t size, BufferUsage usage);
 };
 
-class GpuBuffer:public Buffer
+class GpuBuffer : public Buffer
 {
 public:
-    GpuBuffer( class Device &device, uint64_t size, BufferUsage usage);
+    GpuBuffer(class Device &device, uint64_t size, BufferUsage usage);
 
     void UploadDataFrom(uint64_t bufferSize, const CpuBuffer &stagingBuffer);
 };
@@ -129,12 +143,12 @@ public:
 
 template <typename T>
 inline UniformBuffer<T>::UniformBuffer(Device &device)
-    : CpuBuffer(device,sizeof(T),BufferUsage::UNIFORM)
+    : CpuBuffer(device, sizeof(T), BufferUsage::UNIFORM)
 {
 }
 
 template <typename T>
 inline void UniformBuffer<T>::Set(const T &data)
 {
-    this->Fill(0,sizeof(T), (void *)&data);
+    this->Fill(0, sizeof(T), (void *)&data);
 }

@@ -41,85 +41,95 @@ void RayTraceSBT::Build(VkPipeline pipeline, const RayTraceShaderGroup &shaderGr
 
 	uint32_t offset = 0;
 
-	{
-		mRayGenBuffer = mDevice.CreateCPUBuffer(sbtResults.data() + mHandleSizeAligned * (offset), mHandleSize, BufferUsage::SHADER_BINDING_TABLE);
-		mRayGenAddressRegion = {};
-		mRayGenAddressRegion.deviceAddress = mRayGenBuffer->GetAddress();
-		mRayGenAddressRegion.stride = mHandleSizeAligned;
-		mRayGenAddressRegion.size = mHandleSizeAligned;
+	mSbtBuffer = mDevice.CreateCPUBuffer(mBaseSizeAligned * mGroupCount, BufferUsage::SHADER_BINDING_TABLE);
+	auto addr = mSbtBuffer->MapWhole<uint8_t>();
 
-		offset++;
-	}
+	// ray gen
 
+	mRayGenAddressRegion = {};
+	mRayGenAddressRegion.deviceAddress = mSbtBuffer->GetAddress() + offset * mBaseSizeAligned;
+	mRayGenAddressRegion.stride = mBaseSizeAligned;
+	mRayGenAddressRegion.size = mBaseSizeAligned;
+
+	std::memcpy(addr, sbtResults.data() + (offset++) * mHandleSize, mHandleSize);
+	addr += mBaseSizeAligned;
+
+	// ray miss
+	mRayMissAddressRegion = {};
+	if (!shaderGroup.GetRayMissShaderGroups().empty())
 	{
-		mRayMissBuffer = nullptr;
-		mRayMissAddressRegion = {};
-		if (!shaderGroup.GetRayMissShaderGroups().empty())
+		mRayMissAddressRegion.deviceAddress = mSbtBuffer->GetAddress() + offset * mBaseSizeAligned;
+		mRayMissAddressRegion.stride = mBaseSizeAligned;
+		mRayMissAddressRegion.size = mBaseSizeAligned * shaderGroup.GetRayMissShaderGroups().size();
+
+		for (size_t i = 0; i < shaderGroup.GetRayMissShaderGroups().size(); ++i)
 		{
-			mRayMissBuffer = mDevice.CreateCPUBuffer(sbtResults.data() + mHandleSizeAligned * offset, mHandleSize * shaderGroup.GetRayMissShaderGroups().size(), BufferUsage::SHADER_BINDING_TABLE);
-			mRayMissAddressRegion.deviceAddress = mRayMissBuffer->GetAddress();
-			mRayMissAddressRegion.stride = mHandleSizeAligned;
-			mRayMissAddressRegion.size = mHandleSizeAligned * shaderGroup.GetRayMissShaderGroups().size();
-
-			offset += shaderGroup.GetRayMissShaderGroups().size();
+			std::memcpy(addr, sbtResults.data() + (offset++) * mHandleSize, mHandleSize);
+			addr += mBaseSizeAligned;
 		}
 	}
 
+	// ray closest hit
+	mRayClosestHitAddressRegion = {};
+	if (!shaderGroup.GetRayClosestHitShaderGroups().empty())
 	{
-		mRayClosestHitBuffer = nullptr;
-		mRayClosestHitAddressRegion = {};
-		if (!shaderGroup.GetRayClosestHitShaderGroups().empty())
-		{
-			mRayClosestHitBuffer = mDevice.CreateCPUBuffer(sbtResults.data() + mHandleSizeAligned * offset, mHandleSize * shaderGroup.GetRayClosestHitShaderGroups().size(), BufferUsage::SHADER_BINDING_TABLE);
-			mRayClosestHitAddressRegion.deviceAddress = mRayClosestHitBuffer->GetAddress();
-			mRayClosestHitAddressRegion.stride = mHandleSizeAligned;
-			mRayClosestHitAddressRegion.size = mHandleSizeAligned * shaderGroup.GetRayClosestHitShaderGroups().size();
+		mRayClosestHitAddressRegion.deviceAddress = mSbtBuffer->GetAddress() + offset * mBaseSizeAligned;
+		mRayClosestHitAddressRegion.stride = mBaseSizeAligned;
+		mRayClosestHitAddressRegion.size = mBaseSizeAligned * shaderGroup.GetRayClosestHitShaderGroups().size();
 
-			offset += shaderGroup.GetRayClosestHitShaderGroups().size();
+		for (size_t i = 0; i < shaderGroup.GetRayClosestHitShaderGroups().size(); ++i)
+		{
+			std::memcpy(addr, sbtResults.data() + (offset++) * mHandleSize, mHandleSize);
+			addr += mBaseSizeAligned;
 		}
 	}
 
+	// ray any hit
+	mRayAnyHitAddressRegion = {};
+	if (!shaderGroup.GetRayClosestHitShaderGroups().empty())
 	{
-		mRayAnyHitBuffer = nullptr;
-		mRayAnyHitAddressRegion = {};
-		if (!shaderGroup.GetRayClosestHitShaderGroups().empty())
-		{
-			mRayAnyHitBuffer = mDevice.CreateCPUBuffer(sbtResults.data() + mHandleSizeAligned * offset, mHandleSize * shaderGroup.GetRayClosestHitShaderGroups().size(), BufferUsage::SHADER_BINDING_TABLE);
-			mRayAnyHitAddressRegion.deviceAddress = mRayAnyHitBuffer->GetAddress();
-			mRayAnyHitAddressRegion.stride = mHandleSizeAligned;
-			mRayAnyHitAddressRegion.size = mHandleSizeAligned * shaderGroup.GetRayAnyHitShaderGroups().size();
+		mRayAnyHitAddressRegion.deviceAddress = mSbtBuffer->GetAddress() + offset * mBaseSizeAligned;
+		mRayAnyHitAddressRegion.stride = mHandleSizeAligned;
+		mRayAnyHitAddressRegion.size = mHandleSizeAligned * shaderGroup.GetRayAnyHitShaderGroups().size();
 
-			offset += shaderGroup.GetRayAnyHitShaderGroups().size();
+		for (size_t i = 0; i < shaderGroup.GetRayAnyHitShaderGroups().size(); ++i)
+		{
+			std::memcpy(addr, sbtResults.data() + (offset++) * mHandleSize, mHandleSize);
+			addr += mBaseSizeAligned;
 		}
 	}
 
+	// ray intersection
+	mRayIntersectionAddressRegion = {};
+	if (!shaderGroup.GetRayIntersectionShaderGroups().empty())
 	{
-		mRayIntersectionBuffer = nullptr;
-		mRayIntersectionAddressRegion = {};
-		if (!shaderGroup.GetRayIntersectionShaderGroups().empty())
-		{
-			mRayIntersectionBuffer = mDevice.CreateCPUBuffer(sbtResults.data() + mHandleSizeAligned * offset, mHandleSize * shaderGroup.GetRayIntersectionShaderGroups().size(), BufferUsage::SHADER_BINDING_TABLE);
-			mRayIntersectionAddressRegion.deviceAddress = mRayAnyHitBuffer->GetAddress();
-			mRayIntersectionAddressRegion.stride = mHandleSizeAligned;
-			mRayIntersectionAddressRegion.size = mHandleSizeAligned * shaderGroup.GetRayIntersectionShaderGroups().size();
+		mRayIntersectionAddressRegion.deviceAddress = mSbtBuffer->GetAddress() + offset * mBaseSizeAligned;
+		mRayIntersectionAddressRegion.stride = mHandleSizeAligned;
+		mRayIntersectionAddressRegion.size = mHandleSizeAligned * shaderGroup.GetRayIntersectionShaderGroups().size();
 
-			offset += shaderGroup.GetRayIntersectionShaderGroups().size();
+		for (size_t i = 0; i < shaderGroup.GetRayIntersectionShaderGroups().size(); ++i)
+		{
+			std::memcpy(addr, sbtResults.data() + (offset++) * mHandleSize, mHandleSize);
+			addr += mBaseSizeAligned;
 		}
 	}
 
+	// ray callable
+	mRayCallableAddressRegion = {};
+	if (!shaderGroup.GetRayCallableShaderGroups().empty())
 	{
-		mRayCallableBuffer = nullptr;
-		mRayCallableAddressRegion = {};
-		if (!shaderGroup.GetRayCallableShaderGroups().empty())
-		{
-			mRayCallableBuffer = mDevice.CreateCPUBuffer(sbtResults.data() + mHandleSizeAligned * offset, mHandleSize * shaderGroup.GetRayCallableShaderGroups().size(), BufferUsage::SHADER_BINDING_TABLE);
-			mRayCallableAddressRegion.deviceAddress = mRayAnyHitBuffer->GetAddress();
-			mRayCallableAddressRegion.stride = mHandleSizeAligned;
-			mRayCallableAddressRegion.size = mHandleSizeAligned * shaderGroup.GetRayCallableShaderGroups().size();
+		mRayCallableAddressRegion.deviceAddress = mSbtBuffer->GetAddress() + offset * mBaseSizeAligned;
+		mRayCallableAddressRegion.stride = mHandleSizeAligned;
+		mRayCallableAddressRegion.size = mHandleSizeAligned * shaderGroup.GetRayCallableShaderGroups().size();
 
-			offset += shaderGroup.GetRayCallableShaderGroups().size();
+		for (size_t i = 0; i < shaderGroup.GetRayCallableShaderGroups().size(); ++i)
+		{
+			std::memcpy(addr, sbtResults.data() + (offset++) * mHandleSize, mHandleSize);
+			addr += mBaseSizeAligned;
 		}
 	}
+
+	mSbtBuffer->Unmap();
 }
 
 const VkStridedDeviceAddressRegionKHR &RayTraceSBT::GetRayGenAddressRegion() const
