@@ -17,11 +17,11 @@ public:
 	void Build(VkPipeline pipeline, const RayTraceShaderGroup& shaderGroup);
 
 	const VkStridedDeviceAddressRegionKHR& GetRayGenAddressRegion() const;
-	const std::vector<VkStridedDeviceAddressRegionKHR>& GetRayMissAddressRegions() const;
-	const std::vector<VkStridedDeviceAddressRegionKHR>& GetRayClosestHitAddressRegions() const;
-	const std::vector<VkStridedDeviceAddressRegionKHR>& GetRayAnyHitAddressRegions() const;
-	const std::vector<VkStridedDeviceAddressRegionKHR>& GetRayIntersectionAddressRegions() const;
-	const std::vector<VkStridedDeviceAddressRegionKHR>& GetRayCallableAddressRegions() const;
+	const VkStridedDeviceAddressRegionKHR& GetRayMissAddressRegion() const;
+	const VkStridedDeviceAddressRegionKHR& GetRayClosestHitAddressRegion() const;
+	const VkStridedDeviceAddressRegionKHR& GetRayAnyHitAddressRegion() const;
+	const VkStridedDeviceAddressRegionKHR& GetRayIntersectionAddressRegion() const;
+	const VkStridedDeviceAddressRegionKHR& GetRayCallableAddressRegion() const;
 
 private:
 	const class Device& mDevice;
@@ -34,16 +34,16 @@ private:
 	uint32_t mSize;
 
 	VkStridedDeviceAddressRegionKHR mRayGenAddressRegion;
-	std::vector<VkStridedDeviceAddressRegionKHR> mRayMissAddressRegions;
-	std::vector<VkStridedDeviceAddressRegionKHR> mRayClosestHitAddressRegions;
-	std::vector<VkStridedDeviceAddressRegionKHR> mRayAnyHitAddressRegions;
-	std::vector<VkStridedDeviceAddressRegionKHR> mRayIntersectionAddressRegions;
-	std::vector<VkStridedDeviceAddressRegionKHR> mRayCallableAddressRegions;
+	VkStridedDeviceAddressRegionKHR mRayMissAddressRegion;
+	VkStridedDeviceAddressRegionKHR mRayClosestHitAddressRegion;
+	VkStridedDeviceAddressRegionKHR mRayAnyHitAddressRegion;
+	VkStridedDeviceAddressRegionKHR mRayIntersectionAddressRegion;
+	VkStridedDeviceAddressRegionKHR mRayCallableAddressRegion;
 
 	std::unique_ptr<Buffer> mRayGenBuffer;
-	std::vector<std::unique_ptr<Buffer>> mRayMissBuffers;
-	std::vector<std::unique_ptr<Buffer>> mRayClosestHitBuffers;
-	std::vector<std::unique_ptr<Buffer>> mRayAnyHitBuffers;
-	std::vector<std::unique_ptr<Buffer>> mRayIntersectionBuffers;
-	std::vector<std::unique_ptr<Buffer>> mRayCallableBuffers;
+	std::unique_ptr<Buffer> mRayMissBuffer;
+	std::unique_ptr<Buffer> mRayClosestHitBuffer;
+	std::unique_ptr<Buffer> mRayAnyHitBuffer;
+	std::unique_ptr<Buffer> mRayIntersectionBuffer;
+	std::unique_ptr<Buffer> mRayCallableBuffer;
 };

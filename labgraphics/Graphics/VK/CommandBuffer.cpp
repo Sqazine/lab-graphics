@@ -430,7 +430,7 @@ void RayTraceCommandBuffer::BindDescriptorSets(PipelineLayout *layout, uint32_t 
 
 void RayTraceCommandBuffer::TraceRaysKHR(const RayTraceSBT &sbt, uint32_t width, uint32_t height, uint32_t depth)
 {
-	mDevice.vkCmdTraceRaysKHR(mHandle, &sbt.GetRayGenAddressRegion(), sbt.GetRayMissAddressRegions().data(), sbt.GetRayClosestHitAddressRegions().data(), sbt.GetRayCallableAddressRegions().data(), width, height, depth);
+	mDevice.vkCmdTraceRaysKHR(mHandle, &sbt.GetRayGenAddressRegion(), &sbt.GetRayMissAddressRegion(), &sbt.GetRayClosestHitAddressRegion(), &sbt.GetRayCallableAddressRegion(), width, height, depth);
 }
 
 void RayTraceCommandBuffer::BuildAccelerationStructureKHR(uint32_t infoCount, const VkAccelerationStructureBuildGeometryInfoKHR *pInfos, const VkAccelerationStructureBuildRangeInfoKHR *const *ppBuildRangeInfos)

@@ -40,108 +40,84 @@ void RayTraceSBT::Build(VkPipeline pipeline, const RayTraceShaderGroup &shaderGr
 	VK_CHECK(mDevice.vkGetRayTracingShaderGroupHandlesKHR(mDevice.GetHandle(), pipeline, 0, mGroupCount, mSize, sbtResults.data()));
 
 	uint32_t offset = 0;
+
 	{
-		mRayGenBuffer = mDevice.CreateCPUBuffer(sbtResults.data() + mHandleSizeAligned * (offset++), mHandleSize, BufferUsage::SHADER_BINDING_TABLE);
+		mRayGenBuffer = mDevice.CreateCPUBuffer(sbtResults.data() + mHandleSizeAligned * (offset), mHandleSize, BufferUsage::SHADER_BINDING_TABLE);
 		mRayGenAddressRegion = {};
 		mRayGenAddressRegion.deviceAddress = mRayGenBuffer->GetAddress();
 		mRayGenAddressRegion.stride = mHandleSizeAligned;
 		mRayGenAddressRegion.size = mHandleSizeAligned;
+
+		offset++;
 	}
 
 	{
-		mRayMissBuffers.resize(shaderGroup.GetRayMissShaderGroups().size());
-		mRayMissAddressRegions.resize(mRayMissBuffers.size());
-
-		for (auto &rayMissBuffer : mRayMissBuffers)
-			rayMissBuffer = mDevice.CreateCPUBuffer(sbtResults.data() + mHandleSizeAligned * (offset++), mHandleSize, BufferUsage::SHADER_BINDING_TABLE);
-
-		for (uint32_t i = 0; i < mRayMissBuffers.size(); ++i)
+		mRayMissBuffer = nullptr;
+		mRayMissAddressRegion = {};
+		if (!shaderGroup.GetRayMissShaderGroups().empty())
 		{
-			VkStridedDeviceAddressRegionKHR rayMissAddressRegion{};
-			rayMissAddressRegion.deviceAddress = mRayMissBuffers[i]->GetAddress();
-			rayMissAddressRegion.stride = mHandleSizeAligned;
-			rayMissAddressRegion.size = mHandleSizeAligned;
+			mRayMissBuffer = mDevice.CreateCPUBuffer(sbtResults.data() + mHandleSizeAligned * offset, mHandleSize * shaderGroup.GetRayMissShaderGroups().size(), BufferUsage::SHADER_BINDING_TABLE);
+			mRayMissAddressRegion.deviceAddress = mRayMissBuffer->GetAddress();
+			mRayMissAddressRegion.stride = mHandleSizeAligned;
+			mRayMissAddressRegion.size = mHandleSizeAligned * shaderGroup.GetRayMissShaderGroups().size();
 
-			mRayMissAddressRegions[i] = rayMissAddressRegion;
+			offset += shaderGroup.GetRayMissShaderGroups().size();
 		}
 	}
 
 	{
-		mRayClosestHitBuffers.resize(shaderGroup.GetRayClosestHitShaderGroups().size());
-		mRayClosestHitAddressRegions.resize(mRayClosestHitBuffers.size());
-
-		for (auto &rayClosestHitBuffer : mRayClosestHitBuffers)
-			rayClosestHitBuffer = mDevice.CreateCPUBuffer(sbtResults.data() + mHandleSizeAligned * (offset++), mHandleSize, BufferUsage::SHADER_BINDING_TABLE);
-
-		for (uint32_t i = 0; i < mRayClosestHitBuffers.size(); ++i)
+		mRayClosestHitBuffer = nullptr;
+		mRayClosestHitAddressRegion = {};
+		if (!shaderGroup.GetRayClosestHitShaderGroups().empty())
 		{
-			VkStridedDeviceAddressRegionKHR rayClosestHitAddressRegion{};
-			rayClosestHitAddressRegion.deviceAddress = mRayClosestHitBuffers[i]->GetAddress();
-			rayClosestHitAddressRegion.stride = mHandleSizeAligned;
-			rayClosestHitAddressRegion.size = mHandleSizeAligned;
+			mRayClosestHitBuffer = mDevice.CreateCPUBuffer(sbtResults.data() + mHandleSizeAligned * offset, mHandleSize * shaderGroup.GetRayClosestHitShaderGroups().size(), BufferUsage::SHADER_BINDING_TABLE);
+			mRayClosestHitAddressRegion.deviceAddress = mRayClosestHitBuffer->GetAddress();
+			mRayClosestHitAddressRegion.stride = mHandleSizeAligned;
+			mRayClosestHitAddressRegion.size = mHandleSizeAligned * shaderGroup.GetRayClosestHitShaderGroups().size();
 
-			mRayClosestHitAddressRegions[i] = rayClosestHitAddressRegion;
+			offset += shaderGroup.GetRayClosestHitShaderGroups().size();
 		}
 	}
 
 	{
-		mRayAnyHitBuffers.resize(shaderGroup.GetRayAnyHitShaderGroups().size());
-		mRayAnyHitAddressRegions.resize(mRayAnyHitBuffers.size());
-
-		for (auto &rayAnyHitBuffer : mRayAnyHitBuffers)
-			rayAnyHitBuffer = mDevice.CreateCPUBuffer(sbtResults.data() + mHandleSizeAligned * (offset++), mHandleSize, BufferUsage::SHADER_BINDING_TABLE);
-
-		for (uint32_t i = 0; i < mRayAnyHitBuffers.size(); ++i)
+		mRayAnyHitBuffer = nullptr;
+		mRayAnyHitAddressRegion = {};
+		if (!shaderGroup.GetRayClosestHitShaderGroups().empty())
 		{
-			VkStridedDeviceAddressRegionKHR rayAnyHitAddressRegion{};
-			rayAnyHitAddressRegion.deviceAddress = mRayAnyHitBuffers[i]->GetAddress();
-			rayAnyHitAddressRegion.stride = mHandleSizeAligned;
-			rayAnyHitAddressRegion.size = mHandleSizeAligned;
+			mRayAnyHitBuffer = mDevice.CreateCPUBuffer(sbtResults.data() + mHandleSizeAligned * offset, mHandleSize * shaderGroup.GetRayClosestHitShaderGroups().size(), BufferUsage::SHADER_BINDING_TABLE);
+			mRayAnyHitAddressRegion.deviceAddress = mRayAnyHitBuffer->GetAddress();
+			mRayAnyHitAddressRegion.stride = mHandleSizeAligned;
+			mRayAnyHitAddressRegion.size = mHandleSizeAligned * shaderGroup.GetRayAnyHitShaderGroups().size();
 
-			mRayAnyHitAddressRegions[i] = rayAnyHitAddressRegion;
+			offset += shaderGroup.GetRayAnyHitShaderGroups().size();
 		}
 	}
 
 	{
-		mRayIntersectionBuffers.resize(shaderGroup.GetRayIntersectionShaderGroups().size());
-		mRayIntersectionAddressRegions.resize(mRayIntersectionBuffers.size());
-
-		for (auto &rayIntersectionBuffer : mRayIntersectionBuffers)
-			rayIntersectionBuffer = mDevice.CreateCPUBuffer(sbtResults.data() + mHandleSizeAligned * (offset++), mHandleSize, BufferUsage::SHADER_BINDING_TABLE);
-
-		for (uint32_t i = 0; i < mRayIntersectionBuffers.size(); ++i)
+		mRayIntersectionBuffer = nullptr;
+		mRayIntersectionAddressRegion = {};
+		if (!shaderGroup.GetRayIntersectionShaderGroups().empty())
 		{
-			VkStridedDeviceAddressRegionKHR rayIntersectionAddressRegion{};
-			rayIntersectionAddressRegion.deviceAddress = mRayIntersectionBuffers[i]->GetAddress();
-			rayIntersectionAddressRegion.stride = mHandleSizeAligned;
-			rayIntersectionAddressRegion.size = mHandleSizeAligned;
+			mRayIntersectionBuffer = mDevice.CreateCPUBuffer(sbtResults.data() + mHandleSizeAligned * offset, mHandleSize * shaderGroup.GetRayIntersectionShaderGroups().size(), BufferUsage::SHADER_BINDING_TABLE);
+			mRayIntersectionAddressRegion.deviceAddress = mRayAnyHitBuffer->GetAddress();
+			mRayIntersectionAddressRegion.stride = mHandleSizeAligned;
+			mRayIntersectionAddressRegion.size = mHandleSizeAligned * shaderGroup.GetRayIntersectionShaderGroups().size();
 
-			mRayIntersectionAddressRegions[i] = rayIntersectionAddressRegion;
+			offset += shaderGroup.GetRayIntersectionShaderGroups().size();
 		}
 	}
 
 	{
-		if (shaderGroup.GetRayCallableShaderGroups().empty())
+		mRayCallableBuffer = nullptr;
+		mRayCallableAddressRegion = {};
+		if (!shaderGroup.GetRayCallableShaderGroups().empty())
 		{
-			mRayCallableAddressRegions.emplace_back(VkStridedDeviceAddressRegionKHR{});
-		}
-		else
-		{
-			mRayCallableBuffers.resize(shaderGroup.GetRayCallableShaderGroups().size());
-			mRayCallableAddressRegions.resize(mRayCallableBuffers.size());
+			mRayCallableBuffer = mDevice.CreateCPUBuffer(sbtResults.data() + mHandleSizeAligned * offset, mHandleSize * shaderGroup.GetRayCallableShaderGroups().size(), BufferUsage::SHADER_BINDING_TABLE);
+			mRayCallableAddressRegion.deviceAddress = mRayAnyHitBuffer->GetAddress();
+			mRayCallableAddressRegion.stride = mHandleSizeAligned;
+			mRayCallableAddressRegion.size = mHandleSizeAligned * shaderGroup.GetRayCallableShaderGroups().size();
 
-			for (auto &rayCallableBuffer : mRayCallableBuffers)
-				rayCallableBuffer = mDevice.CreateCPUBuffer(sbtResults.data() + mHandleSizeAligned * (offset++), mHandleSize, BufferUsage::SHADER_BINDING_TABLE);
-
-			for (uint32_t i = 0; i < mRayCallableBuffers.size(); ++i)
-			{
-				VkStridedDeviceAddressRegionKHR rayCallableAddressRegion{};
-				rayCallableAddressRegion.deviceAddress = mRayCallableBuffers[i]->GetAddress();
-				rayCallableAddressRegion.stride = mHandleSizeAligned;
-				rayCallableAddressRegion.size = mHandleSizeAligned;
-
-				mRayCallableAddressRegions[i] = rayCallableAddressRegion;
-			}
+			offset += shaderGroup.GetRayCallableShaderGroups().size();
 		}
 	}
 }
@@ -151,25 +127,25 @@ const VkStridedDeviceAddressRegionKHR &RayTraceSBT::GetRayGenAddressRegion() con
 	return mRayGenAddressRegion;
 }
 
-const std::vector<VkStridedDeviceAddressRegionKHR> &RayTraceSBT::GetRayMissAddressRegions() const
+const VkStridedDeviceAddressRegionKHR &RayTraceSBT::GetRayMissAddressRegion() const
 {
-	return mRayMissAddressRegions;
+	return mRayMissAddressRegion;
 }
 
-const std::vector<VkStridedDeviceAddressRegionKHR> &RayTraceSBT::GetRayClosestHitAddressRegions() const
+const VkStridedDeviceAddressRegionKHR &RayTraceSBT::GetRayClosestHitAddressRegion() const
 {
-	return mRayClosestHitAddressRegions;
+	return mRayClosestHitAddressRegion;
 }
 
-const std::vector<VkStridedDeviceAddressRegionKHR> &RayTraceSBT::GetRayAnyHitAddressRegions() const
+const VkStridedDeviceAddressRegionKHR &RayTraceSBT::GetRayAnyHitAddressRegion() const
 {
-	return mRayAnyHitAddressRegions;
+	return mRayAnyHitAddressRegion;
 }
-const std::vector<VkStridedDeviceAddressRegionKHR> &RayTraceSBT::GetRayIntersectionAddressRegions() const
+const VkStridedDeviceAddressRegionKHR &RayTraceSBT::GetRayIntersectionAddressRegion() const
 {
-	return mRayIntersectionAddressRegions;
+	return mRayIntersectionAddressRegion;
 }
-const std::vector<VkStridedDeviceAddressRegionKHR> &RayTraceSBT::GetRayCallableAddressRegions() const
+const VkStridedDeviceAddressRegionKHR &RayTraceSBT::GetRayCallableAddressRegion() const
 {
-	return mRayCallableAddressRegions;
+	return mRayCallableAddressRegion;
 }

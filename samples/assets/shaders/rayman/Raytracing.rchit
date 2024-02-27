@@ -505,8 +505,7 @@ void main()
 	    		ao++;
 	    }
 
-	    // payload.radiance = vec3(1.0-ao/samples);
-	    payload.radiance = vec3(1.0);
+	    payload.radiance = vec3(1.0-ao/samples);
 	    payload.stop = true;
     #elif defined(DEBUG_ALBEDO_OUTPUT)
         payload.radiance = material.albedoColor.xyz ;
