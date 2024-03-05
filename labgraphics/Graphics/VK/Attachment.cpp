@@ -1,7 +1,7 @@
 #include "Attachment.h"
 
 ColorAttachment::ColorAttachment()
-    : mView(nullptr), mFormat(Format::R8G8B8A8_UNORM), mBlendEnable(false)
+    : mView(nullptr), mFormat(Format::R8G8B8A8_UNORM)
 {
 }
 
@@ -17,9 +17,14 @@ ColorAttachment &ColorAttachment::SetFormat(Format fmt)
 
 ColorAttachment &ColorAttachment::SetBlendDesc(bool enable, BlendDesc colorBlendDesc, BlendDesc alphaBlendDesc)
 {
-    mBlendEnable = enable;
-    mColorBlendDesc = colorBlendDesc;
-    mAlphaBlendDesc = alphaBlendDesc;
+    mState.blendEnable = enable;
+    mState.srcColorBlendFactor = BLEND_FACTOR_CAST(colorBlendDesc.srcFactor);
+    mState.dstColorBlendFactor = BLEND_FACTOR_CAST(colorBlendDesc.dstFactor);
+    mState.colorBlendOp = BLEND_OP_CAST(colorBlendDesc.op);
+    mState.colorWriteMask = COLOR_COMPONENT_CAST(ColorComponent::ALL);
+    mState.srcAlphaBlendFactor = BLEND_FACTOR_CAST(alphaBlendDesc.srcFactor);
+    mState.dstAlphaBlendFactor = BLEND_FACTOR_CAST(alphaBlendDesc.dstFactor);
+    mState.alphaBlendOp = BLEND_OP_CAST(alphaBlendDesc.op);
     return *this;
 }
 
@@ -29,19 +34,9 @@ ColorAttachment &ColorAttachment::SetView(ImageView2D *view)
     return *this;
 }
 
-VkPipelineColorBlendAttachmentState ColorAttachment::GetVkBlendState() const
+const VkPipelineColorBlendAttachmentState &ColorAttachment::GetVkBlendState() const
 {
-    VkPipelineColorBlendAttachmentState result = {};
-    result.blendEnable = mBlendEnable;
-    result.srcColorBlendFactor = BLEND_FACTOR_CAST(mColorBlendDesc.srcFactor);
-    result.dstColorBlendFactor = BLEND_FACTOR_CAST(mColorBlendDesc.dstFactor);
-    result.colorBlendOp = BLEND_OP_CAST(mColorBlendDesc.op);
-    result.colorWriteMask = COLOR_COMPONENT_CAST(ColorComponent::ALL);
-    result.srcAlphaBlendFactor = BLEND_FACTOR_CAST(mAlphaBlendDesc.srcFactor);
-    result.dstAlphaBlendFactor = BLEND_FACTOR_CAST(mAlphaBlendDesc.dstFactor);
-    result.alphaBlendOp = BLEND_OP_CAST(mAlphaBlendDesc.op);
-
-    return result;
+    return mState;
 }
 
 const Format &ColorAttachment::GetFormat() const

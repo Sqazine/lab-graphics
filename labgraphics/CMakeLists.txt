@@ -38,25 +38,24 @@ find_library(vulkan_1
              PATHS ${VULKAN_LIB_DIR})
 
 target_link_libraries(labgraphics PRIVATE SDL2-static
-                                         SDL2main 
-                                         stb
-                                         cgltf
-                                         glad 
-                                         spdlog::spdlog_header_only
-                                         OSDependent 
-                                         glslang 
-                                         MachineIndependent 
-                                         GenericCodeGen 
-                                         OGLCompiler 
-                                         glslang-default-resource-limits 
-                                         SPVRemapper 
-                                         SPIRV 
-                                         HLSL 
-                                         ${vulkan_1}
-                                         spirv-reflect
-                                         tinyobjloader
-                                         imgui
-)
+                                          SDL2main 
+                                          stb
+                                          cgltf
+                                          glad 
+                                          spdlog::spdlog_header_only
+                                          OSDependent 
+                                          glslang 
+                                          MachineIndependent 
+                                          GenericCodeGen 
+                                          OGLCompiler 
+                                          glslang-default-resource-limits 
+                                          SPVRemapper 
+                                          SPIRV 
+                                          HLSL 
+                                          ${vulkan_1}
+                                          spirv-reflect
+                                          tinyobjloader
+                                          imgui)
 
 if(MSVC)
     target_compile_definitions(labgraphics PRIVATE _CRT_SECURE_NO_WARNINGS)

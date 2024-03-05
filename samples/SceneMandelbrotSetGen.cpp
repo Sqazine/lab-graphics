@@ -33,35 +33,14 @@ void SceneMandelbrotSetGen::Init()
 
     mComputeCommandBuffer = App::Instance().GetGraphicsContext()->GetDevice()->GetComputeCommandPool()->CreatePrimaryCommandBuffer();
 
-    mUniformBuffer->Set(mUniform);
     mComputeCommandBuffer->ExecuteImmediately([&]()
                                               {
                                                   mComputeCommandBuffer->BindDescriptorSets(mPipelineLayout.get(), 0, {mDescriptorSet});
                                                   mComputeCommandBuffer->BindPipeline(mComputePipeline.get());
                                                   mComputeCommandBuffer->Dispatch((uint32_t)ceil(mWindowExtent.x / float(WORKGROUP_SIZE)), (uint32_t)ceil(mWindowExtent.y / float(WORKGROUP_SIZE)), 1); });
 
-    VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
-    colorBlendAttachment.blendEnable = VK_FALSE;
-    colorBlendAttachment.srcColorBlendFactor = BLEND_FACTOR_CAST(BlendFactor::ONE);
-    colorBlendAttachment.dstColorBlendFactor = BLEND_FACTOR_CAST(BlendFactor::ZERO);
-    colorBlendAttachment.colorBlendOp = BLEND_OP_CAST(BlendOp::ADD);
-    colorBlendAttachment.srcAlphaBlendFactor = BLEND_FACTOR_CAST(BlendFactor::ZERO);
-    colorBlendAttachment.dstAlphaBlendFactor = BLEND_FACTOR_CAST(BlendFactor::ONE);
-    colorBlendAttachment.alphaBlendOp = BLEND_OP_CAST(BlendOp::ADD);
-    colorBlendAttachment.colorWriteMask = COLOR_COMPONENT_CAST(ColorComponent::ALL);
-
-    VkPipelineColorBlendStateCreateInfo colorBlendStateInfo = {};
-    colorBlendStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    colorBlendStateInfo.pNext = nullptr;
-    colorBlendStateInfo.flags = 0;
-    colorBlendStateInfo.logicOpEnable = VK_FALSE;
-    colorBlendStateInfo.logicOp = VK_LOGIC_OP_COPY;
-    colorBlendStateInfo.attachmentCount = 1;
-    colorBlendStateInfo.pAttachments = &colorBlendAttachment;
-    colorBlendStateInfo.blendConstants[0] = 0.0f;
-    colorBlendStateInfo.blendConstants[1] = 0.0f;
-    colorBlendStateInfo.blendConstants[2] = 0.0f;
-    colorBlendStateInfo.blendConstants[3] = 0.0f;
+    ColorAttachment colorAttachment0;
+    colorAttachment0.SetBlendDesc(false);
 
     auto vertShader = App::Instance().GetGraphicsContext()->GetDevice()->CreateShader(ShaderStage::VERTEX, ReadFile(std::string(ASSETS_DIR) + "shaders/post.vert"));
     auto fragShader = App::Instance().GetGraphicsContext()->GetDevice()->CreateShader(ShaderStage::FRAGMENT, ReadFile(std::string(ASSETS_DIR) + "shaders/post.frag"));
@@ -76,9 +55,8 @@ void SceneMandelbrotSetGen::Init()
         .SetPolygonMode(PolygonMode::FILL)
         .SetFrontFace(FrontFace::CCW)
         .SetPipelineLayout(mPipelineLayout.get())
-        .SetRenderPass(App::Instance().GetGraphicsContext()->GetSwapChain()->GetDefaultRenderPass());
-
-    mRasterPipeline->pColorBlendState = colorBlendStateInfo;
+        .SetRenderPass(App::Instance().GetGraphicsContext()->GetSwapChain()->GetDefaultRenderPass())
+        .SetColorAttachment(0,colorAttachment0);
 
     mRasterPass = std::make_unique<RasterPass>(App::Instance().GetGraphicsContext()->GetSwapChain()->GetImages().size());
     mRasterPass->RecordAllCommands([&](RasterCommandBuffer *rasterCmd, uint32_t frameIdx)

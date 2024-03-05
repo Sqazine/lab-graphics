@@ -11,28 +11,8 @@ SphScene::~SphScene()
 
 void SphScene::Init()
 {
-	VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
-	colorBlendAttachment.blendEnable = VK_FALSE;
-	colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-	colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-	colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
-	colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-	colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-	colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
-	colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-
-	VkPipelineColorBlendStateCreateInfo colorBlendStateInfo = {};
-	colorBlendStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-	colorBlendStateInfo.pNext = nullptr;
-	colorBlendStateInfo.flags = 0;
-	colorBlendStateInfo.logicOpEnable = VK_FALSE;
-	colorBlendStateInfo.logicOp = VK_LOGIC_OP_COPY;
-	colorBlendStateInfo.attachmentCount = 1;
-	colorBlendStateInfo.pAttachments = &colorBlendAttachment;
-	colorBlendStateInfo.blendConstants[0] = 0.0f;
-	colorBlendStateInfo.blendConstants[1] = 0.0f;
-	colorBlendStateInfo.blendConstants[2] = 0.0f;
-	colorBlendStateInfo.blendConstants[3] = 0.0f;
+	ColorAttachment colorAttachment0;
+	colorAttachment0.SetBlendDesc(false);
 
 	mRasterPipelineLayout = std::make_unique<PipelineLayout>(*App::Instance().GetGraphicsContext()->GetDevice());
 
@@ -52,9 +32,8 @@ void SphScene::Init()
 		.SetPolygonMode(PolygonMode::FILL)
 		.SetFrontFace(FrontFace::CCW)
 		.SetPipelineLayout(mRasterPipelineLayout.get())
-		.SetRenderPass(App::Instance().GetGraphicsContext()->GetSwapChain()->GetDefaultRenderPass());
-
-	mRasterPipeline->pColorBlendState = colorBlendStateInfo;
+		.SetRenderPass(App::Instance().GetGraphicsContext()->GetSwapChain()->GetDefaultRenderPass())
+		.SetColorAttachment(0, colorAttachment0);
 
 	auto frameCount = App::Instance().GetGraphicsContext()->GetSwapChain()->GetImages().size();
 

@@ -202,6 +202,12 @@ RasterPipeline &RasterPipeline::SetRenderPass(RenderPass *renderPass)
 	return *this;
 }
 
+RasterPipeline &RasterPipeline::SetColorAttachment(size_t slot, const ColorAttachment &attachment)
+{
+	mColorBlendAttachmentStates[slot] = attachment.GetVkBlendState();
+	return *this;
+}
+
 void RasterPipeline::Build()
 {
 	auto shaderStages = mShaderGroup.GetShaderStages();
@@ -276,6 +282,25 @@ void RasterPipeline::Build()
 	dynamicState.dynamicStateCount = dynamicStates.size();
 	dynamicState.pDynamicStates = dynamicStates.data();
 
+	std::vector<VkPipelineColorBlendAttachmentState> blendStates;
+	for (const auto &[slot, state] : mColorBlendAttachmentStates)
+	{
+		blendStates.emplace_back(state);
+	}
+
+	VkPipelineColorBlendStateCreateInfo colorBlendStateInfo = {};
+	colorBlendStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+	colorBlendStateInfo.pNext = nullptr;
+	colorBlendStateInfo.flags = 0;
+	colorBlendStateInfo.logicOpEnable = VK_FALSE;
+	colorBlendStateInfo.logicOp = VK_LOGIC_OP_COPY;
+	colorBlendStateInfo.attachmentCount = blendStates.size();
+	colorBlendStateInfo.pAttachments = blendStates.data();
+	colorBlendStateInfo.blendConstants[0] = 0.0f;
+	colorBlendStateInfo.blendConstants[1] = 0.0f;
+	colorBlendStateInfo.blendConstants[2] = 0.0f;
+	colorBlendStateInfo.blendConstants[3] = 0.0f;
+
 	VkGraphicsPipelineCreateInfo info{};
 	info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 	info.pNext = nullptr;
@@ -290,7 +315,7 @@ void RasterPipeline::Build()
 	info.pRasterizationState = &rasterizationStateInfo;
 	info.pMultisampleState = &multiSampleStateInfo;
 	info.pDepthStencilState = &pDepthStencilState;
-	info.pColorBlendState = &pColorBlendState;
+	info.pColorBlendState = &colorBlendStateInfo;
 	info.pDynamicState = &dynamicState;
 	info.subpass = 0;
 	info.renderPass = mRenderPass->GetHandle();

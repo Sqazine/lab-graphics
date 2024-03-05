@@ -1,5 +1,6 @@
 #pragma once
 #include <vulkan/vulkan.h>
+#include <map>
 #include "RayTraceSBT.h"
 #include "Shader.h"
 #include "ShaderGroup.h"
@@ -75,10 +76,9 @@ public:
 
 	RasterPipeline &SetRenderPass(RenderPass *renderPass);
 
-	RasterPipeline& SetColorAttachments(const std::vector<ColorAttachment*> & attachments);
+	RasterPipeline& SetColorAttachment(size_t slot,const ColorAttachment& attachment);
 
 	VkPipelineDepthStencilStateCreateInfo pDepthStencilState{VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO};
-	VkPipelineColorBlendStateCreateInfo pColorBlendState{VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO};
 
 private:
 	void Build() override;
@@ -109,6 +109,8 @@ private:
 	float mMinSampleShading{0};
 
 	RenderPass *mRenderPass;
+
+	std::map<size_t,VkPipelineColorBlendAttachmentState> mColorBlendAttachmentStates;
 
 	RasterShaderGroup mShaderGroup;
 };

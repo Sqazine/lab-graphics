@@ -22,10 +22,6 @@ template <typename CmdBuffer>
 Pass<CmdBuffer>::Pass(size_t inFlightFrameCount)
     : mInFlightFrameCount(inFlightFrameCount)
 {
-    mImageAvailableSemaphores.resize(mInFlightFrameCount);
-    mRenderFinishedSemaphores.resize(mInFlightFrameCount);
-    mInFlightFences.resize(mInFlightFrameCount);
-
     mCommandBuffers = CreateCommandBuffers<CmdBuffer>(mInFlightFrameCount);
     mImageAvailableSemaphores = App::Instance().GetGraphicsContext()->GetDevice()->CreateSemaphores(mInFlightFrameCount);
     mRenderFinishedSemaphores = App::Instance().GetGraphicsContext()->GetDevice()->CreateSemaphores(mInFlightFrameCount);

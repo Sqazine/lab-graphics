@@ -20,14 +20,12 @@ public:
     ColorAttachment &SetBlendDesc(bool enable, BlendDesc colorBlendDesc = {}, BlendDesc alphaBlendDesc = {});
     ColorAttachment &SetView(ImageView2D *view);
 
-    VkPipelineColorBlendAttachmentState GetVkBlendState() const;
+    const VkPipelineColorBlendAttachmentState& GetVkBlendState() const;
 
     const Format &GetFormat() const;
 private:
     Format mFormat;
     ImageView2D *mView;
 
-    bool mBlendEnable;
-    BlendDesc mColorBlendDesc;
-    BlendDesc mAlphaBlendDesc;
+    VkPipelineColorBlendAttachmentState mState;
 };
