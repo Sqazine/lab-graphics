@@ -107,7 +107,7 @@ RenderPass *SwapChain::GetDefaultRenderPass() const
     return mDefaultRenderPass.get();
 }
 
-const std::vector<std::unique_ptr<Framebuffer>> &SwapChain::GetDefaultFrameBuffers() const
+const std::vector<std::unique_ptr<Framebuffer>> &SwapChain::GetDefaultFrameBuffers()
 {
     return mDefaultFrameBuffers;
 }
@@ -198,8 +198,10 @@ void SwapChain::Build()
 
     for (size_t i = 0; i < GetImageViews().size(); ++i)
     {
-        std::vector<ImageView2D *> views = {GetImageViews()[i].get()};
-        mDefaultFrameBuffers[i] = std::make_unique<Framebuffer>(mDevice, mDefaultRenderPass.get(), views, GetExtent().x, GetExtent().y);
+        mDefaultFrameBuffers[i] = std::make_unique<Framebuffer>(mDevice);
+        mDefaultFrameBuffers[i]->AttachRenderPass(mDefaultRenderPass.get())
+                                .SetExtent(GetExtent().x, GetExtent().y)
+                                .BindAttachment(0, GetImageViews()[i].get());
     }
 }
 

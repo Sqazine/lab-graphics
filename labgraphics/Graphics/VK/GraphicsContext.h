@@ -23,7 +23,7 @@ public:
 
     Instance *GetInstance() const;
     Device *GetDevice() const;
-    SwapChain *GetSwapChain() const;
+    SwapChain *GetSwapChain();
 
 private:
     std::unique_ptr<Instance> mInstance;

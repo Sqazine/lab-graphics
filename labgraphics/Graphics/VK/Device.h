@@ -51,6 +51,7 @@ public:
 
 	Shader *CreateShader(ShaderStage type, std::string_view src);
 	Shader *CreateShader(ShaderStage type, const std::vector<char> &src);
+	
 	std::unique_ptr<SwapChain> CreateSwapChain();
 	std::unique_ptr<Fence> CreateFence(FenceStatus status = FenceStatus::UNSIGNALED) const;
 	std::vector<std::unique_ptr<Fence>> CreateFences(size_t count, FenceStatus status = FenceStatus::UNSIGNALED) const;
@@ -69,12 +70,18 @@ public:
 
 	template <typename T>
 	std::unique_ptr<Buffer> CreateRasterVertexBuffer(const std::vector<T> &vertices);
+
 	template <typename T>
 	std::unique_ptr<Buffer> CreateRayTraceVertexBuffer(const std::vector<T> &vertices) const;
+
 	template <typename T>
 	std::unique_ptr<IndexBuffer> CreateRasterIndexBuffer(const std::vector<T> &indices) const;
+
 	template <typename T>
 	std::unique_ptr<IndexBuffer> CreateRayTraceIndexBuffer(const std::vector<T> &indices) const;
+
+	template <typename T>
+	std::unique_ptr<UniformBuffer<T>> CreateUniformBuffer() const;
 
 	std::unique_ptr<CpuBuffer> CreateCPUBuffer(void *srcData, uint32_t bufferSize, BufferUsage usageFlags) const;
 	std::unique_ptr<CpuBuffer> CreateCPUBuffer(uint32_t bufferSize, BufferUsage usage) const;
@@ -83,8 +90,6 @@ public:
 	std::unique_ptr<GpuBuffer> CreateGPUStorageBuffer(uint64_t bufferSize) const;
 	std::unique_ptr<CpuBuffer> CreateCPUStorageBuffer(void *srcData, uint64_t bufferSize) const;
 	std::unique_ptr<CpuBuffer> CreateCPUStorageBuffer(uint64_t bufferSize) const;
-	template <typename T>
-	std::unique_ptr<UniformBuffer<T>> CreateUniformBuffer() const;
 
 	const VkPhysicalDeviceRayTracingPipelinePropertiesKHR &GetRayTracingPipelineProps() const;
 	const VkPhysicalDeviceAccelerationStructureFeaturesKHR &GetRayTracingAccelerationFeatures() const;

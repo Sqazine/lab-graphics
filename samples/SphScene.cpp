@@ -191,6 +191,6 @@ void SphScene::Render()
 void SphScene::InitParticleData(std::array<Vector2f, PARTICLE_NUM> initParticlePosition)
 {
 	auto stagingBuffer = App::Instance().GetGraphicsContext()->GetDevice()->CreateCPUBuffer(mPosSsboSize, BufferUsage::TRANSFER_SRC);
-	stagingBuffer->Fill(initParticlePosition.data());
+	stagingBuffer->FillWhole(initParticlePosition.data());
 	mPositionBuffer->UploadDataFrom(stagingBuffer->GetSize(), *stagingBuffer);
 }

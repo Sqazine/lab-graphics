@@ -2,13 +2,6 @@
 #include "Device.h"
 #include "Utils.h"
 
-#define SET(member, value) \
-    if (member == value)   \
-        return *this;      \
-    member = value;        \
-    mIsDirty = true;       \
-    return *this;
-
 Sampler::Sampler(const Device &device)
     : mDevice(device), mHandle(VK_NULL_HANDLE)
 {

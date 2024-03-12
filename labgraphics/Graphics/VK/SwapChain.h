@@ -43,7 +43,7 @@ public:
     void Present(const std::vector<Semaphore *> waitSemaphores);
 
     RenderPass *GetDefaultRenderPass() const;
-    const std::vector<std::unique_ptr<Framebuffer>> &GetDefaultFrameBuffers() const;
+    const std::vector<std::unique_ptr<Framebuffer>> &GetDefaultFrameBuffers();
 
 private:
     void Build();

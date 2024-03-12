@@ -54,11 +54,11 @@ inline const char *GetErrorCode(const VkResult result)
 	}
 }
 
-#define VK_CHECK(r)                                                                 \
-	do                                                                              \
-	{                                                                               \
-		VkResult result = (r);                                                      \
-		if (result != VK_SUCCESS)                                                   \
+#define VK_CHECK(r)                                                                    \
+	do                                                                                 \
+	{                                                                                  \
+		VkResult result = (r);                                                         \
+		if (result != VK_SUCCESS)                                                      \
 			LOG_ERROR("[{}]File:{} Line:{}", GetErrorCode(result), __FILE__, __LINE__) \
 	} while (false);
 
@@ -87,6 +87,13 @@ inline const char *GetErrorCode(const VkResult result)
 			std::cout << "Failed to resolve function " << name << std::endl;                    \
 		}                                                                                       \
 	}
+
+#define SET(member, value) \
+	if (member == value)   \
+		return *this;      \
+	member = value;        \
+	mIsDirty = true;       \
+	return *this;
 
 struct QueueFamilyIndices
 {

@@ -2,12 +2,11 @@
 #include "App.h"
 GraphicsContext::GraphicsContext()
 {
-    mInstance = std::make_unique<Instance>(App::Instance().GetWindow(), gValidationLayers,gInstanceExtensions);
+    mInstance = std::make_unique<Instance>(App::Instance().GetWindow(), gValidationLayers, gInstanceExtensions);
 
-    mDevice = std::make_unique<Device>(*mInstance,DeviceFeature::RAY_TRACE);
+    mDevice = std::make_unique<Device>(*mInstance, DeviceFeature::RAY_TRACE);
 
     mSwapChain = std::make_unique<SwapChain>(*mDevice);
-   
 }
 GraphicsContext::~GraphicsContext()
 {
@@ -22,7 +21,7 @@ Device *GraphicsContext::GetDevice() const
 {
     return mDevice.get();
 }
-SwapChain *GraphicsContext::GetSwapChain() const
+SwapChain *GraphicsContext::GetSwapChain()
 {
     return mSwapChain.get();
 }
