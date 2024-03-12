@@ -23,12 +23,6 @@ const std::vector<const char *> deviceExtensions = {
 	VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME,
 };
 
-struct IndexBufferDesc
-{
-	std::unique_ptr<Buffer> buffer;
-	VkIndexType type;
-};
-
 enum DeviceFeature
 {
 	NONE = 0x0000,
@@ -78,9 +72,10 @@ public:
 	template <typename T>
 	std::unique_ptr<Buffer> CreateRayTraceVertexBuffer(const std::vector<T> &vertices) const;
 	template <typename T>
-	IndexBufferDesc CreateRasterIndexBuffer(const std::vector<T> &indices);
+	std::unique_ptr<IndexBuffer> CreateRasterIndexBuffer(const std::vector<T> &indices) const;
 	template <typename T>
-	IndexBufferDesc CreateRayTraceIndexBuffer(const std::vector<T> &indices) const;
+	std::unique_ptr<IndexBuffer> CreateRayTraceIndexBuffer(const std::vector<T> &indices) const;
+
 	std::unique_ptr<CpuBuffer> CreateCPUBuffer(void *srcData, uint32_t bufferSize, BufferUsage usageFlags) const;
 	std::unique_ptr<CpuBuffer> CreateCPUBuffer(uint32_t bufferSize, BufferUsage usage) const;
 	std::unique_ptr<GpuBuffer> CreateGPUBuffer(uint64_t bufferSize, BufferUsage usage) const;
@@ -144,78 +139,4 @@ private:
 	std::unique_ptr<class RayTraceCommandPool> mRayTraceCommandPool;
 	std::unique_ptr<class TransferCommandPool> mTransferCommandPool;
 };
-
-template <typename T>
-inline std::unique_ptr<Buffer> Device::CreateRasterVertexBuffer(const std::vector<T> &vertices)
-{
-	auto result = std::make_unique<Buffer>(*this, sizeof(T) * vertices.size(), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-	uint64_t bufferSize = sizeof(T) * vertices.size();
-	auto stagingBuffer = CreateCPUBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
-
-	stagingBuffer.Fill(bufferSize, vertices.data());
-
-	auto commandBuffer = GetRasterCommandPool()->CreatePrimaryCommandBuffer();
-	commandBuffer->BeginOnce();
-	VkBufferCopy copyRegion{};
-	copyRegion.srcOffset = 0;
-	copyRegion.dstOffset = 0;
-	copyRegion.size = bufferSize;
-
-	result->CopyFrom(commandBuffer->Get(), copyRegion, *stagingBuffer);
-
-	commandBuffer->End();
-	commandBuffer->Submit();
-
-	return std::move(result);
-}
-
-template <typename T>
-inline std::unique_ptr<Buffer> Device::CreateRayTraceVertexBuffer(const std::vector<T> &vertices) const
-{
-	return CreateCPUBuffer((void *)vertices.data(), sizeof(T) * (uint32_t)vertices.size(), BufferUsage::ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY);
-}
-
-template <typename T>
-inline IndexBufferDesc Device::CreateRasterIndexBuffer(const std::vector<T> &indices)
-{
-	IndexBufferDesc result;
-	result.type = DataStr2VkIndexType(typeid(T).name());
-
-	auto buffer = std::make_unique<Buffer>(sizeof(T) * indices.size(), VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-	uint64_t bufferSize = sizeof(T) * indices.size();
-	auto stagingBuffer = CreateCPUBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
-
-	stagingBuffer.Fill(bufferSize, indices.data());
-
-	auto commandBuffer = GetRasterCommandPool()->CreatePrimaryCommandBuffer();
-	commandBuffer->BeginOnce();
-
-	VkBufferCopy copyRegion{};
-	copyRegion.srcOffset = 0;
-	copyRegion.dstOffset = 0;
-	copyRegion.size = bufferSize;
-
-	buffer->CopyFrom(commandBuffer->Get(), copyRegion, *stagingBuffer);
-
-	commandBuffer->End();
-	commandBuffer->Submit();
-
-	result.buffer = std::move(buffer);
-
-	return result;
-}
-template <typename T>
-inline IndexBufferDesc Device::CreateRayTraceIndexBuffer(const std::vector<T> &indices) const
-{
-	IndexBufferDesc result;
-	result.type = DataStr2VkIndexType(typeid(T).name());
-	result.buffer = CreateCPUBuffer((void *)indices.data(), sizeof(T) * indices.size(), BufferUsage::ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY);
-	return result;
-}
-
-template <typename T>
-inline std::unique_ptr<UniformBuffer<T>> Device::CreateUniformBuffer() const
-{
-	return std::move(std::make_unique<UniformBuffer<T>>(const_cast<Device &>(*this)));
-}
+#include "Device.inl"

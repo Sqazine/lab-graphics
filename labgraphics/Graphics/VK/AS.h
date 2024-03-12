@@ -46,8 +46,8 @@ public:
         this->mIndexBuffer = std::move(other.mIndexBuffer);
     }
 
-    template <typename T1, typename T2>
-    void SetData(const std::vector<T1> &vertices, const std::vector<T2> &indices);
+    template <typename vType, typename iType>
+    void SetData(const std::vector<vType> &vertices, const std::vector<iType> &indices);
 
     VkAccelerationStructureInstanceKHR CreateInstance(VkTransformMatrixKHR matrix);
     VkAccelerationStructureInstanceKHR CreateInstance();
@@ -56,7 +56,7 @@ private:
     static uint32_t mInstanceID;
 
     std::unique_ptr<Buffer> mVertexBuffer;
-    std::unique_ptr<Buffer> mIndexBuffer;
+    std::unique_ptr<IndexBuffer> mIndexBuffer;
 };
 
 template <typename T1, typename T2>
@@ -66,13 +66,13 @@ BLAS::BLAS(Device &device, const std::vector<T1> &vertices, const std::vector<T2
     SetData(vertices, indices);
 }
 
-template <typename T1, typename T2>
-inline void BLAS::SetData(const std::vector<T1> &vertices, const std::vector<T2> &indices)
+template <typename vType, typename iType>
+inline void BLAS::SetData(const std::vector<vType> &vertices, const std::vector<iType> &indices)
 {
     mVertexBuffer = mDevice.CreateRayTraceVertexBuffer(vertices);
 
     if (!indices.empty())
-        mIndexBuffer = mDevice.CreateRayTraceIndexBuffer(indices).buffer;
+        mIndexBuffer = mDevice.CreateRayTraceIndexBuffer(indices);
 
     VkAccelerationStructureGeometryKHR asGeometryInfo = {};
     asGeometryInfo.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR;
@@ -82,13 +82,13 @@ inline void BLAS::SetData(const std::vector<T1> &vertices, const std::vector<T2>
     asGeometryInfo.geometry.triangles.vertexData = mVertexBuffer->GetVkAddress();
     asGeometryInfo.geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
     asGeometryInfo.geometry.triangles.maxVertex = (uint32_t)vertices.size();
-    asGeometryInfo.geometry.triangles.vertexStride = sizeof(T1);
+    asGeometryInfo.geometry.triangles.vertexStride = sizeof(vType);
 
     uint32_t primitiveCount = (uint32_t)vertices.size() / 3;
     if (!indices.empty())
     {
         asGeometryInfo.geometry.triangles.indexData = mIndexBuffer->GetVkAddress();
-        asGeometryInfo.geometry.triangles.indexType = DataStr2VkIndexType(typeid(T2).name());
+        asGeometryInfo.geometry.triangles.indexType = DataStr2VkIndexType(typeid(iType).name());
         primitiveCount = (uint32_t)indices.size() / 3;
     }
 

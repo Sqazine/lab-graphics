@@ -125,7 +125,7 @@ void Buffer::Unmap()
     vkUnmapMemory(mDevice.GetHandle(), mMemory);
 }
 
-void Buffer::Fill(const void *data)
+void Buffer::FillWhole(const void *data)
 {
     Fill(0, mSize, data);
 }

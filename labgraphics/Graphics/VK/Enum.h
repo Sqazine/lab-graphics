@@ -16,6 +16,7 @@ enum class BufferUsage : uint64_t
 #define ITEM_EXT(x) x = VK_BUFFER_USAGE_##x##_BIT_EXT
 #define ITEM_BUFFER(x) x = VK_BUFFER_USAGE_##x##_BUFFER_BIT
 #define ITEM_BUFFER_EXT(x) x = VK_BUFFER_USAGE_##x##_BUFFER_BIT_EXT
+    NONE = 0,
     ITEM(TRANSFER_SRC),
     ITEM(TRANSFER_DST),
     ITEM_BUFFER(UNIFORM_TEXEL),
@@ -464,7 +465,7 @@ enum class ColorComponent : uint64_t
     ITEM(B),
     ITEM(A),
     ALL = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
-    
+
 #undef ITEM
 };
 #define COLOR_COMPONENT_CAST(t) (static_cast<VkColorComponentFlags>(std::underlying_type<ColorComponent>::type(t)))

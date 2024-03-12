@@ -313,6 +313,10 @@ VkPhysicalDevice Device::SelectPhyDevice()
     vkEnumeratePhysicalDevices(mInstance.GetHandle(), &deviceCount, phyDevices.data());
     for (uint32_t i = 0; i < phyDevices.size(); ++i)
     {
+        
+    VkPhysicalDeviceProperties deviceProperties;
+    vkGetPhysicalDeviceProperties(phyDevices[i], &deviceProperties);
+
         VkPhysicalDeviceAccelerationStructureFeaturesKHR rtAccelerationFeatures{};
         rtAccelerationFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
 
@@ -321,7 +325,7 @@ VkPhysicalDevice Device::SelectPhyDevice()
         deviceFeatures2.pNext = &rtAccelerationFeatures;
         vkGetPhysicalDeviceFeatures2(phyDevices[i], &deviceFeatures2);
 
-        if (rtAccelerationFeatures.accelerationStructure == VK_TRUE)
+        if (rtAccelerationFeatures.accelerationStructure == VK_TRUE && deviceProperties.deviceType==VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
         {
             result = phyDevices[i];
             break;

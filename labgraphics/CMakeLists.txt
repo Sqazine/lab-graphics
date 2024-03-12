@@ -1,7 +1,7 @@
-file(GLOB MATH "Math/*.hpp" "Math/*.h" "Math/*.cpp")
-file(GLOB GRAPHICS "Graphics/*.h" "Graphics/*.cpp")
-file(GLOB VK "Graphics/VK/*.h" "Graphics/VK/*.cpp")
-file(GLOB ROOT "*.h" "*.cpp")
+file(GLOB MATH "Math/*.hpp" "Math/*.h" "Math/*.inl" "Math/*.cpp")
+file(GLOB GRAPHICS "Graphics/*.h" "Graphics/*.inl" "Graphics/*.cpp")
+file(GLOB VK "Graphics/VK/*.h" "Graphics/VK/*.inl" "Graphics/VK/*.cpp")
+file(GLOB ROOT "*.h" "*.inl" "*.cpp")
 
 source_group("Math" FILES ${MATH})
 source_group("Graphics" FILES ${GRAPHICS})
@@ -59,6 +59,7 @@ target_link_libraries(labgraphics PRIVATE SDL2-static
 
 if(MSVC)
     target_compile_definitions(labgraphics PRIVATE _CRT_SECURE_NO_WARNINGS)
+    target_compile_definitions(labgraphics PRIVATE _SILENCE_STDEXT_ARR_ITERS_DEPRECATION_WARNING)
     target_compile_definitions(labgraphics PRIVATE NOMINMAX)
     target_compile_options(labgraphics PRIVATE "/W4")
     target_compile_options(labgraphics PRIVATE "/wd4251;")
