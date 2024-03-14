@@ -4,13 +4,14 @@
 #include <iostream>
 
 Framebuffer::Framebuffer(const Device &device)
-	: mDevice(device)
+	: mDevice(device), mHandle(nullptr)
 {
 }
 
 Framebuffer::~Framebuffer()
 {
-	vkDestroyFramebuffer(mDevice.GetHandle(), mHandle, nullptr);
+	if (mHandle)
+		vkDestroyFramebuffer(mDevice.GetHandle(), mHandle, nullptr);
 }
 
 const VkFramebuffer &Framebuffer::GetHandle()

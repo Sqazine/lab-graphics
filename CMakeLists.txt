@@ -14,21 +14,6 @@ message("VULKAN_ROOT=${VULKAN_ROOT}")
 message("VULKAN_INCLUDE_DIR=${VULKAN_INCLUDE_DIR}")
 message("VULKAN_LIB_DIR=${VULKAN_LIB_DIR}")
 
-if(WIN32)
-    add_compile_options(/W4)
-    add_compile_options(/wd4819)
-endif()
-
-set(DISABLE_FORCE_DEBUG_POSTFIX ON)
-set(CMAKE_DEBUG_POSTFIX "_d") 
-set(CMAKE_RELEASE_POSTFIX "")
-set(SDL_CMAKE_DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX})
-
-set(SPIRV_HEADERS_SKIP_INSTALL OFF)
-set(BUILD_SHARED_LIBS OFF)
-set(SPDLOG_BUILD_SHARED OFF)
-set(ASSIMP_WARNINGS_AS_ERRORS OFF)
-
 set(DEST_BINARY_DIR ${CMAKE_BINARY_DIR}/bin)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${DEST_BINARY_DIR})
@@ -48,6 +33,21 @@ else ()
     message(STATUS "other platform: ${CMAKE_SYSTEM_NAME}")
     set(CURRENT_PLATFORM PLATFORM_OTHER)
 endif ()
+
+if(WIN32)
+    add_compile_options(/W4)
+    add_compile_options(/wd4819)
+endif()
+
+set(DISABLE_FORCE_DEBUG_POSTFIX ON)
+set(CMAKE_DEBUG_POSTFIX "_d") 
+set(CMAKE_RELEASE_POSTFIX "")
+set(SDL_CMAKE_DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX})
+
+set(SPIRV_HEADERS_SKIP_INSTALL OFF)
+set(BUILD_SHARED_LIBS OFF)
+set(SPDLOG_BUILD_SHARED OFF)
+set(ASSIMP_WARNINGS_AS_ERRORS OFF)
 
 set(THIRD_PARTY_DIR "${CMAKE_SOURCE_DIR}/3rd")
 set(SDL_INC_DIR "${THIRD_PARTY_DIR}/SDL/include")
@@ -99,7 +99,6 @@ if(WIN32)
     set_property(TARGET imgui  PROPERTY FOLDER 3rd)
     set_property(TARGET tinyobjloader  PROPERTY FOLDER 3rd)
 endif()
-
 
 add_subdirectory(labgraphics)
 

@@ -11,6 +11,9 @@ GraphicsContext::GraphicsContext()
 GraphicsContext::~GraphicsContext()
 {
     mDevice->WaitIdle();
+    mSwapChain.reset(nullptr);
+    mDevice.reset(nullptr);
+    mInstance.reset(nullptr);
 }
 
 Instance *GraphicsContext::GetInstance() const
