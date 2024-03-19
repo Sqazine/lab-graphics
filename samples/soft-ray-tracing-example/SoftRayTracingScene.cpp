@@ -425,8 +425,11 @@ void SoftRayTracingScene::InitRenderPass()
     attachmentSwapRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
     // subpass 1
+    VkAttachmentReference attachRef{};
+    attachRef.attachment = 0;
+    attachRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     std::vector<VkAttachmentReference> attachmentRefPong = {
-        VkAttachmentReference{.attachment = 0, .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL},
+        attachRef,
     };
 
     VkSubpassDescription subPassDescPong{};
@@ -434,9 +437,15 @@ void SoftRayTracingScene::InitRenderPass()
     subPassDescPong.colorAttachmentCount = attachmentRefPong.size();
 
     // subpass 2
+    VkAttachmentReference attachRef0{};
+    attachRef0.attachment = 0;
+    attachRef0.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    VkAttachmentReference attachRef1{};
+    attachRef1.attachment = 1;
+    attachRef1.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     std::vector<VkAttachmentReference> attachmentRefFinal = {
-        VkAttachmentReference{.attachment = 0, .layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL},
-        VkAttachmentReference{.attachment = 1, .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL},
+        attachRef0,
+        attachRef1,
     };
 
     VkSubpassDescription subPassDescFinal{};
@@ -483,19 +492,22 @@ void SoftRayTracingScene::InitRenderPass()
 }
 void SoftRayTracingScene::InitDescriptorSetLayout()
 {
+    VkDescriptorSetLayoutBinding layoutBinding0{};
+    layoutBinding0.binding = 0;
+    layoutBinding0.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    layoutBinding0.descriptorCount = 1;
+    layoutBinding0.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    layoutBinding0.pImmutableSamplers = nullptr;
+
+    VkDescriptorSetLayoutBinding layoutBinding1{};
+    layoutBinding1.binding = 0;
+    layoutBinding1.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+    layoutBinding1.descriptorCount = 1;
+    layoutBinding1.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    layoutBinding1.pImmutableSamplers = nullptr;
     std::vector<VkDescriptorSetLayoutBinding> descriptorSetLayoutBindings = {
-        VkDescriptorSetLayoutBinding{
-            .binding = 0,
-            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .descriptorCount = 1,
-            .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-            .pImmutableSamplers = nullptr},
-        VkDescriptorSetLayoutBinding{
-            .binding = 1,
-            .descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
-            .descriptorCount = 1,
-            .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-            .pImmutableSamplers = nullptr},
+        layoutBinding0,
+        layoutBinding1,
     };
 
     VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo{};
@@ -585,18 +597,9 @@ void SoftRayTracingScene::InitPipelines()
     constexpr float minDepth = 0.0f;
     constexpr float maxDepth = 1.0f;
 
-    VkViewport viewPort = {
-        .x = 0.0f,
-        .y = 0.0f,
-        .width = (float)mWidth,
-        .height = (float)mHeight,
-        .minDepth = minDepth,
-        .maxDepth = maxDepth};
+    VkViewport viewPort = {0.0f, 0.0f, (float)mWidth, (float)mHeight, minDepth, maxDepth};
 
-    VkRect2D scissor = {
-        .offset = {0, 0},
-        .extent = mSwapChainExtent,
-    };
+    VkRect2D scissor = {{0, 0}, mSwapChainExtent};
 
     VkPipelineViewportStateCreateInfo viewportCreateInfo{};
     viewportCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -674,7 +677,7 @@ void SoftRayTracingScene::InitPingPongImages()
     imageInfo.pNext = nullptr;
     imageInfo.flags = 0;
     imageInfo.format = mPingPongImageFormat;
-    imageInfo.extent = {.width = (uint32_t)mWidth, .height = (uint32_t)mHeight, .depth = 1};
+    imageInfo.extent = {(uint32_t)mWidth, (uint32_t)mHeight, 1};
     imageInfo.mipLevels = 1;
     imageInfo.arrayLayers = 1;
     imageInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -735,11 +738,10 @@ void SoftRayTracingScene::InitPingPongImages()
     imageViewCreateInfo.format = mPingPongImageFormat;
     imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
     imageViewCreateInfo.image = mImageA;
-    imageViewCreateInfo.components = {
-        .r = VK_COMPONENT_SWIZZLE_IDENTITY,
-        .g = VK_COMPONENT_SWIZZLE_IDENTITY,
-        .b = VK_COMPONENT_SWIZZLE_IDENTITY,
-        .a = VK_COMPONENT_SWIZZLE_IDENTITY};
+    imageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+    imageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+    imageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+    imageViewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
 
     VK_CHECK(vkCreateImageView(mDevice, &imageViewCreateInfo, nullptr, &mImageViewA));
 
@@ -916,7 +918,7 @@ void SoftRayTracingScene::InitDescriptorSets()
 
     // Write to descriptor set B, where B is the intermediate render target
     {
-         VkWriteDescriptorSet cisDescSetWrite{};
+        VkWriteDescriptorSet cisDescSetWrite{};
         cisDescSetWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         cisDescSetWrite.pNext = nullptr;
         cisDescSetWrite.descriptorCount = 1;
@@ -942,24 +944,23 @@ void SoftRayTracingScene::InitDescriptorSets()
 
 void SoftRayTracingScene::InitQueryPool()
 {
-    uint32_t timeStampValidBits=mQueueFamilyProperties[0].timestampValidBits;
-    if(timeStampValidBits==0)
+    uint32_t timeStampValidBits = mQueueFamilyProperties[0].timestampValidBits;
+    if (timeStampValidBits == 0)
         throw std::runtime_error("Timestamp queries are not supported on this queue");
     else
-        std::cout<<"Valid timestamp bits: " << timeStampValidBits<<std::endl;
+        std::cout << "Valid timestamp bits: " << timeStampValidBits << std::endl;
 
     VkQueryPoolCreateInfo poolCreateInfo{};
-    poolCreateInfo.sType=VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
-    poolCreateInfo.pNext=nullptr;
-    poolCreateInfo.flags=0;
-    poolCreateInfo.queryCount=2;
-    poolCreateInfo.queryType=VK_QUERY_TYPE_TIMESTAMP;
-    
-    vkCreateQueryPool(mDevice,&poolCreateInfo,nullptr,&mQueryPool);
+    poolCreateInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
+    poolCreateInfo.pNext = nullptr;
+    poolCreateInfo.flags = 0;
+    poolCreateInfo.queryCount = 2;
+    poolCreateInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
 
-    SingleTimeCommands([&](auto cmd){
-        vkResetQueryPool(mDevice,mQueryPool,0,2);
-    });
+    vkCreateQueryPool(mDevice, &poolCreateInfo, nullptr, &mQueryPool);
+
+    SingleTimeCommands([&](auto cmd)
+                       { vkResetQueryPool(mDevice, mQueryPool, 0, 2); });
 }
 
 void SoftRayTracingScene::RecordCommandBuffer(uint32_t idx)

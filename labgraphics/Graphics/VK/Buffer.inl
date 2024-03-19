@@ -1,4 +1,5 @@
 #include "Device.h"
+
 template <typename T>
 inline T *Buffer::Map(size_t offset, size_t size) const
 {

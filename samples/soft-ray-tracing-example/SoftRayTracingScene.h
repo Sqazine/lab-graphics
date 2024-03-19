@@ -1,10 +1,9 @@
 #pragma once
-#include "Scene/Scene.h"
+#include "labgraphics.h"
 #include <vulkan/vulkan.h>
 #include <string_view>
 #include <memory>
 #include <vector>
-#include "Window.h"
 class SoftRayTracingScene : public Scene
 {
 public:
