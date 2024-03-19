@@ -4,11 +4,11 @@
 #include <string_view>
 #include <memory>
 #include <vector>
-class SoftRayTracingScene : public Scene
+class SceneSoftRayTracing : public Scene
 {
 public:
-    SoftRayTracingScene();
-    ~SoftRayTracingScene() override;
+    SceneSoftRayTracing();
+    ~SceneSoftRayTracing() override;
 
     void Init() override;
     void ProcessInput() override;

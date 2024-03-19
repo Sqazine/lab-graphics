@@ -1,4 +1,4 @@
-#include "SoftRayTracingScene.h"
+#include "SceneSoftRayTracing.h"
 #include "VK/Utils.h"
 #include "App.h"
 #include <iostream>
@@ -110,7 +110,7 @@ VkShaderModule LoadShader(const VkDevice &device, const VkShaderStageFlagBits &s
     return shaderModule;
 }
 
-SoftRayTracingScene::SoftRayTracingScene()
+SceneSoftRayTracing::SceneSoftRayTracing()
     : mSpp(0),
       mTotalFramesElapsed(0),
       mCursorPosition{0.5f, 0.5f},
@@ -118,12 +118,12 @@ SoftRayTracingScene::SoftRayTracingScene()
       mPingPongImageFormat(VK_FORMAT_R32G32B32_SFLOAT)
 {
 }
-SoftRayTracingScene::~SoftRayTracingScene()
+SceneSoftRayTracing::~SceneSoftRayTracing()
 {
     vkDeviceWaitIdle(mDevice);
 }
 
-void SoftRayTracingScene::Init()
+void SceneSoftRayTracing::Init()
 {
     mWidth = 1024;
     mHeight = 768;
@@ -131,27 +131,27 @@ void SoftRayTracingScene::Init()
     App::Instance().GetWindow()->SetTitle("soft-ray-tracing-example-example");
     Setup();
 }
-void SoftRayTracingScene::ProcessInput()
+void SceneSoftRayTracing::ProcessInput()
 {
 }
 
-void SoftRayTracingScene::Update()
+void SceneSoftRayTracing::Update()
 {
 }
 
-void SoftRayTracingScene::Render()
+void SceneSoftRayTracing::Render()
 {
 }
 
-void SoftRayTracingScene::RenderUI()
+void SceneSoftRayTracing::RenderUI()
 {
 }
 
-void SoftRayTracingScene::CleanUp()
+void SceneSoftRayTracing::CleanUp()
 {
 }
 
-void SoftRayTracingScene::Resize()
+void SceneSoftRayTracing::Resize()
 {
     vkDeviceWaitIdle(mDevice);
 
@@ -186,7 +186,7 @@ void SoftRayTracingScene::Resize()
     ClearPingPongImages();
 }
 
-void SoftRayTracingScene::Setup()
+void SceneSoftRayTracing::Setup()
 {
     InitWindow();
     InitInstance();
@@ -212,11 +212,11 @@ void SoftRayTracingScene::Setup()
     InitQueryPool();
 }
 
-void SoftRayTracingScene::InitWindow()
+void SceneSoftRayTracing::InitWindow()
 {
     App::Instance().GetWindow()->Show();
 }
-void SoftRayTracingScene::InitInstance()
+void SceneSoftRayTracing::InitInstance()
 {
     std::vector<const char *> layers;
     std::vector<const char *> extensions;
@@ -264,7 +264,7 @@ void SoftRayTracingScene::InitInstance()
     VK_CHECK(CreateDebugUtilsMessengerEXT(mInstance, &debugInfo, nullptr, &mDebugUtilsMessenger));
 #endif
 }
-void SoftRayTracingScene::InitDevice()
+void SceneSoftRayTracing::InitDevice()
 {
     uint32_t phyDeviceCount = 0;
     vkEnumeratePhysicalDevices(mInstance, &phyDeviceCount, nullptr);
@@ -318,12 +318,12 @@ void SoftRayTracingScene::InitDevice()
     const uint32_t queueIdx = 0;
     vkGetDeviceQueue(mDevice, mQueueFamilyIndex, queueIdx, &mQueue);
 }
-void SoftRayTracingScene::InitSurface()
+void SceneSoftRayTracing::InitSurface()
 {
     mSurface = App::Instance().GetWindow()->GetSurface(mInstance);
 }
 
-void SoftRayTracingScene::InitSwapChain()
+void SceneSoftRayTracing::InitSwapChain()
 {
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(mPhysicalDevice, mSurface, &mSurfaceCapabilities);
 
@@ -390,7 +390,7 @@ void SoftRayTracingScene::InitSwapChain()
         mSwapChainImageViews.emplace_back(view);
     }
 }
-void SoftRayTracingScene::InitRenderPass()
+void SceneSoftRayTracing::InitRenderPass()
 {
     VkAttachmentDescription attachmentDescriptionPong{};
     attachmentDescriptionPong.format = mPingPongImageFormat;
@@ -490,7 +490,7 @@ void SoftRayTracingScene::InitRenderPass()
 
     VK_CHECK(vkCreateRenderPass(mDevice, &renderPassCreateInfo, nullptr, &mRenderPass));
 }
-void SoftRayTracingScene::InitDescriptorSetLayout()
+void SceneSoftRayTracing::InitDescriptorSetLayout()
 {
     VkDescriptorSetLayoutBinding layoutBinding0{};
     layoutBinding0.binding = 0;
@@ -519,7 +519,7 @@ void SoftRayTracingScene::InitDescriptorSetLayout()
 
     VK_CHECK(vkCreateDescriptorSetLayout(mDevice, &descriptorSetLayoutInfo, nullptr, &mDescriptorSetLayout));
 }
-void SoftRayTracingScene::InitPipelineLayout()
+void SceneSoftRayTracing::InitPipelineLayout()
 {
     VkPushConstantRange pushConstantRange{};
     pushConstantRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -537,11 +537,11 @@ void SoftRayTracingScene::InitPipelineLayout()
 
     VK_CHECK(vkCreatePipelineLayout(mDevice, &pipelineLayoutInfo, nullptr, &mPipelineLayout));
 }
-void SoftRayTracingScene::InitPipelines()
+void SceneSoftRayTracing::InitPipelines()
 {
-    auto vsQuadShaderModule = LoadShader(mDevice, VK_SHADER_STAGE_VERTEX_BIT, std::string(ASSET_DIR) + "quad.vert");
-    auto fsPathTraceShaderModule = LoadShader(mDevice, VK_SHADER_STAGE_FRAGMENT_BIT, std::string(ASSET_DIR) + "pathtrace.frag");
-    auto fsCompositeShaderModule = LoadShader(mDevice, VK_SHADER_STAGE_FRAGMENT_BIT, std::string(ASSET_DIR) + "composite.frag");
+    auto vsQuadShaderModule = LoadShader(mDevice, VK_SHADER_STAGE_VERTEX_BIT, std::string(SHADER_DIR) + "SoftRayTracing/quad.vert");
+    auto fsPathTraceShaderModule = LoadShader(mDevice, VK_SHADER_STAGE_FRAGMENT_BIT, std::string(SHADER_DIR) + "SoftRayTracing/pathtrace.frag");
+    auto fsCompositeShaderModule = LoadShader(mDevice, VK_SHADER_STAGE_FRAGMENT_BIT, std::string(SHADER_DIR) + "SoftRayTracing/composite.frag");
 
     VkPipelineShaderStageCreateInfo vsQuadCreateInfo{};
     vsQuadCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -670,7 +670,7 @@ void SoftRayTracingScene::InitPipelines()
     graphicsPipelineInfo.subpass = 1;
     VK_CHECK(vkCreateGraphicsPipelines(mDevice, VK_NULL_HANDLE, 1, &graphicsPipelineInfo, nullptr, &mPipelineComposite));
 }
-void SoftRayTracingScene::InitPingPongImages()
+void SceneSoftRayTracing::InitPingPongImages()
 {
     VkImageCreateInfo imageInfo{};
     imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -748,7 +748,7 @@ void SoftRayTracingScene::InitPingPongImages()
     imageViewCreateInfo.image = mImageB;
     VK_CHECK(vkCreateImageView(mDevice, &imageViewCreateInfo, nullptr, &mImageViewB));
 }
-void SoftRayTracingScene::InitFrameBuffers()
+void SceneSoftRayTracing::InitFrameBuffers()
 {
     mPingPongFramebuffers.clear();
 
@@ -786,7 +786,7 @@ void SoftRayTracingScene::InitFrameBuffers()
         mPingPongFramebuffers.emplace_back(fbBA);
     }
 }
-void SoftRayTracingScene::InitCommandPool()
+void SceneSoftRayTracing::InitCommandPool()
 {
     VkCommandPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -795,7 +795,7 @@ void SoftRayTracingScene::InitCommandPool()
 
     VK_CHECK(vkCreateCommandPool(mDevice, &poolInfo, nullptr, &mCommandPool));
 }
-void SoftRayTracingScene::InitCommandBuffers()
+void SceneSoftRayTracing::InitCommandBuffers()
 {
     VkCommandBufferAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -806,7 +806,7 @@ void SoftRayTracingScene::InitCommandBuffers()
 
     vkAllocateCommandBuffers(mDevice, &allocInfo, mCommandBuffers.data());
 }
-void SoftRayTracingScene::InitSynchronizationPrimitives()
+void SceneSoftRayTracing::InitSynchronizationPrimitives()
 {
     VkSemaphoreCreateInfo semaInfo{};
     semaInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -828,7 +828,7 @@ void SoftRayTracingScene::InitSynchronizationPrimitives()
         mFences.emplace_back(fence);
     }
 }
-void SoftRayTracingScene::InitDescriptorPool()
+void SceneSoftRayTracing::InitDescriptorPool()
 {
     VkDescriptorPoolSize descriptorPoolSizes[2] = {
         {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2},
@@ -846,7 +846,7 @@ void SoftRayTracingScene::InitDescriptorPool()
     vkCreateDescriptorPool(mDevice, &poolCreateInfo, nullptr, &mDescriptorPool);
 }
 
-void SoftRayTracingScene::InitSampler()
+void SceneSoftRayTracing::InitSampler()
 {
     VkSamplerCreateInfo samplerInfo{};
     samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -865,7 +865,7 @@ void SoftRayTracingScene::InitSampler()
 
     vkCreateSampler(mDevice, &samplerInfo, nullptr, &mSampler);
 }
-void SoftRayTracingScene::InitDescriptorSets()
+void SceneSoftRayTracing::InitDescriptorSets()
 {
     VkDescriptorSetAllocateInfo descriptorSetAllocInfo{};
     descriptorSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -942,7 +942,7 @@ void SoftRayTracingScene::InitDescriptorSets()
     }
 }
 
-void SoftRayTracingScene::InitQueryPool()
+void SceneSoftRayTracing::InitQueryPool()
 {
     uint32_t timeStampValidBits = mQueueFamilyProperties[0].timestampValidBits;
     if (timeStampValidBits == 0)
@@ -963,7 +963,7 @@ void SoftRayTracingScene::InitQueryPool()
                        { vkResetQueryPool(mDevice, mQueryPool, 0, 2); });
 }
 
-void SoftRayTracingScene::RecordCommandBuffer(uint32_t idx)
+void SceneSoftRayTracing::RecordCommandBuffer(uint32_t idx)
 {
     const VkRect2D renderArea{{0, 0}, mSwapChainExtent};
 
@@ -1049,7 +1049,7 @@ void SoftRayTracingScene::RecordCommandBuffer(uint32_t idx)
     vkEndCommandBuffer(mCommandBuffers[idx]);
 }
 
-void SoftRayTracingScene::OneTimeCommands(std::function<void(VkCommandBuffer const &)> func)
+void SceneSoftRayTracing::OneTimeCommands(std::function<void(VkCommandBuffer const &)> func)
 {
     VkCommandBuffer mOneTimeCommandBuffer;
 
@@ -1090,7 +1090,7 @@ void SoftRayTracingScene::OneTimeCommands(std::function<void(VkCommandBuffer con
 
     vkFreeCommandBuffers(mDevice, mCommandPool, 1, &mOneTimeCommandBuffer);
 }
-void SoftRayTracingScene::SingleTimeCommands(std::function<void(VkCommandBuffer)> func)
+void SceneSoftRayTracing::SingleTimeCommands(std::function<void(VkCommandBuffer)> func)
 {
     VkCommandBuffer mOneTimeCommandBuffer;
 
@@ -1132,7 +1132,7 @@ void SoftRayTracingScene::SingleTimeCommands(std::function<void(VkCommandBuffer)
     vkFreeCommandBuffers(mDevice, mCommandPool, 1, &mOneTimeCommandBuffer);
 }
 
-void SoftRayTracingScene::ClearPingPongImages()
+void SceneSoftRayTracing::ClearPingPongImages()
 {
     VkClearColorValue black = {0.0f, 0.0f, 0.0f, 1.0f};
 
