@@ -36,15 +36,16 @@ Pass<CmdBuffer>::~Pass()
 template <typename CmdBuffer>
 void Pass<CmdBuffer>::Render()
 {
+    mInFlightFences[mCurFrame]->Wait();
+
     App::Instance().GetGraphicsContext()->GetSwapChain()->AcquireNextImage(mImageAvailableSemaphores[mCurFrame].get());
 
-    mInFlightFences[mCurFrame]->Wait();
     mInFlightFences[mCurFrame]->Reset();
 
-    mCommandBuffers[mCurFrame]->Submit({PipelineStage::COLOR_ATTACHMENT_OUTPUT}, {mImageAvailableSemaphores[mCurFrame].get()}, {mRenderFinishedSemaphores[mCurFrame].get()}, mInFlightFences[mCurFrame].get());
+    GetCurrentCommandBuffer()->Submit({PipelineStage::COLOR_ATTACHMENT_OUTPUT}, {mImageAvailableSemaphores[mCurFrame].get()}, {mRenderFinishedSemaphores[mCurFrame].get()}, mInFlightFences[mCurFrame].get());
 
     App::Instance().GetGraphicsContext()->GetSwapChain()->Present({mRenderFinishedSemaphores[mCurFrame].get()});
-    App::Instance().GetGraphicsContext()->GetDevice()->GetPresentQueue()->WaitIdle();
+    // App::Instance().GetGraphicsContext()->GetDevice()->GetPresentQueue()->WaitIdle();
 
     mCurFrame = (mCurFrame + 1) % mInFlightFrameCount;
 }
@@ -60,6 +61,13 @@ void Pass<CmdBuffer>::RecordAllCommands(std::function<void(CmdBuffer *, size_t)>
 template <typename CmdBuffer>
 void Pass<CmdBuffer>::RecordCurrentCommand(std::function<void(CmdBuffer *, size_t)> fn)
 {
+    mInFlightFences[mCurFrame]->Wait();
     mCommandBuffers[mCurFrame]->Record([&]()
                                        { fn(mCommandBuffers[mCurFrame].get(), mCurFrame); });
+}
+
+template <typename CmdBuffer>
+CmdBuffer *Pass<CmdBuffer>::GetCurrentCommandBuffer() const
+{
+    return mCommandBuffers[mCurFrame].get();
 }

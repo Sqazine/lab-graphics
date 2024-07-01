@@ -143,7 +143,7 @@ void SceneImgui::RenderUI()
     if (!is_minimized)
     {
         mImguiPass->RecordCurrentCommand([&](RasterCommandBuffer *rasterCmd,size_t curFrameIdx)
-                                  {
+                                         {
             rasterCmd->BeginRenderPass(App::Instance().GetGraphicsContext()->GetSwapChain()->GetDefaultRenderPass()->GetHandle(),
             App::Instance().GetGraphicsContext()->GetSwapChain()->GetDefaultFrameBuffers()[curFrameIdx]->GetHandle(),
             App::Instance().GetGraphicsContext()->GetSwapChain()->GetRenderArea(),

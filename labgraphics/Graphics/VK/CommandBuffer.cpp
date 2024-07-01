@@ -197,7 +197,7 @@ void CommandBuffer::CopyImageFromBuffer(Image2D *dst, Buffer *src)
 
 void CommandBuffer::Reset()
 {
-	vkResetCommandBuffer(mHandle, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+	VK_CHECK(vkResetCommandBuffer(mHandle, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT));
 }
 
 void CommandBuffer::TransitionImageNewLayout(Image2D *image, ImageLayout newLayout)

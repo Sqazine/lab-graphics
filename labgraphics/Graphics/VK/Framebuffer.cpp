@@ -57,6 +57,7 @@ void Framebuffer::Build()
 
 		mInfo.attachmentCount = attachments.size();
 		mInfo.pAttachments = attachments.data();
+		mInfo.layers=1;
 		VK_CHECK(vkCreateFramebuffer(mDevice.GetHandle(), &mInfo, nullptr, &mHandle));
 
 		mIsDirty = false;

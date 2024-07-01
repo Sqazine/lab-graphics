@@ -18,6 +18,7 @@ public:
     void RecordAllCommands(std::function<void(CmdBuffer *, size_t)> fn);
     void RecordCurrentCommand(std::function<void(CmdBuffer *, size_t)> fn);
 
+    CmdBuffer* GetCurrentCommandBuffer() const;
 private:
     std::vector<std::unique_ptr<CmdBuffer>> mCommandBuffers;
     std::vector<std::unique_ptr<Semaphore>> mImageAvailableSemaphores;

@@ -16,11 +16,12 @@ const vec3 Y_AXIS={0.0,1.0,0.0};
 const vec3 Z_AXIS={0.0,0.0,1.0};
 const vec3 ORIGIN={0.0,0.0,0.0};
 const vec3 MISS={-1.0,-1.0,-1.0};
-const vec3 BLACK={0.0,0.0,0.0};
-const vec3 WHITE={1.0,1.0,1.0};
-const vec3 RED={1.0,0.0,0.0};
-const vec3 GREEN={0.0,1.0,0.0};
-const vec3 BLUE={0.0,0.0,1.0};
+
+const vec3 COLOR_BLACK={0.0,0.0,0.0};
+const vec3 COLOR_WHITE={1.0,1.0,1.0};
+const vec3 COLOR_RED={1.0,0.0,0.0};
+const vec3 COLOR_GREEN={0.0,1.0,0.0};
+const vec3 COLOR_BLUE={0.0,0.0,1.0};
 const float IGNORED=-1.0;
 
 float Map(float v,float inMin,float inMax,float outMin,float outMax)
