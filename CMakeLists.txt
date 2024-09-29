@@ -89,4 +89,3 @@ endif()
 add_subdirectory(labgraphics)
 
 add_subdirectory(samples)
-# add_subdirectory(samples/comp5822m-example)
