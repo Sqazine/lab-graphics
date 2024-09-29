@@ -1,0 +1,33 @@
+name: SDL 
+url: https://github.com/libsdl-org/SDL.git 
+version: 2.0.16
+
+name: glad
+url: https://glad.dav1d.de/
+
+name: glslang
+url: https://github.com/KhronosGroup/glslang.git
+version: 12.1.0
+
+name: spdlog
+url: https://github.com/gabime/spdlog.git
+version: 1.8.0
+
+name: stb
+url: https://github.com/nothings/stb.git
+
+name: SDL_ttf
+url: https://github.com/libsdl-org/SDL_ttf.git
+version: 2.0.15
+
+name: spirv-reflect
+version: 1.2.136
+
+name: tinyobjloader
+version: 2.0.0-rc1
+
+name: cgltf
+version: 1.9
+
+name: assimp
+version: 5.3.1

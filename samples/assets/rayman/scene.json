@@ -1,0 +1,523 @@
+{
+    "Lights": [
+        {
+            "type": "quad",
+            "position": [
+                -2.04973,
+                5.14472,
+                0.974365
+            ],
+            "v1": [
+                2.040,
+                5.14472,
+                0.974365
+            ],
+            "v2": [
+                -2.04973,
+                5.14472,
+                2.251
+            ],
+            "emission": [
+                9,
+                9,
+                10
+            ]
+        }
+    ],
+    "Entities": [
+        {
+            "aspect":1.3333,
+            "fov": 45,
+            "target": [
+                0,
+                0,
+                0
+            ],
+            "position": [
+                -9.22637,
+                3.72115,
+                -6.48578
+            ]
+        },
+        {
+            "name": "Background",
+            "type": "HDR",
+            "resource": "../hdr/newport_loft.hdr"
+        },
+        {
+            "name": "ajax",
+            "resource": "../meshes/ajax.glb",
+            "materials": [
+                "lambertian"
+            ],
+            "position": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "rotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "scale": [
+                1.0,
+                1.0,
+                1.0
+            ]
+        },
+        {
+            "name": "rhombus",
+            "resource": "../meshes/rhombus.glb",
+            "materials": [
+                "opacity"
+            ],
+            "position": [
+                1.0,
+                0.0,
+                0.0
+            ],
+            "rotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "scale": [
+                5.0,
+                5.0,
+                5.0
+            ]
+        },
+        {
+            "name": "TestingModel",
+            "resource": "../meshes/TestingModel.glb",
+            "materials": [
+                "glass"
+            ],
+            "position": [
+                -0.934,
+                0.474,
+                -0.021
+            ],
+            "rotation": [
+                90.0,
+                90.0,
+                0.0
+            ],
+            "scale": [
+                0.01,
+                0.01,
+                0.01
+            ]
+        },
+        {
+            "name": "glass",
+            "resource": "../meshes/glass.glb",
+            "materials": [
+                "glass",
+                "glass",
+                "glass",
+                "glass",
+                "glass"
+            ],
+            "position": [
+                3.0,
+                1.0,
+                0.0
+            ],
+            "rotation": [
+                0.0,
+                0.0,
+                90.0
+            ],
+            "scale": [
+                1.0,
+                1.0,
+                1.0
+            ]
+        },
+        {
+            "name": "cerberus",
+            "resource": "../meshes/cerberus.glb",
+            "materials": [
+                "cerberus_mat"
+            ],
+            "position": [
+                0.0,
+                0.56,
+                -0.791
+            ],
+            "rotation": [
+                180.0,
+                -85.315,
+                180.0
+            ],
+            "scale": [
+                1.0,
+                1.0,
+                1.0
+            ]
+        },
+        {
+            "name": "damageHelmet",
+            "resource": "../meshes/helmet/damageHelmet.glb",
+            "materials": [
+                "damaged_helmet"
+            ],
+            "position": [
+                -1.0,
+                0.56,
+                -1.0
+            ],
+            "rotation": [
+                180.0,
+                -85.315,
+                180.0
+            ],
+            "scale": [
+                0.5,
+                0.5,
+                0.5
+            ]
+        },
+        {
+            "name": "Waterflask",
+            "resource": "../meshes/Waterflask.glb",
+            "materials": [
+                "lambertian",
+                "yellow",
+                "yellow",
+                "Color #3d89c2ff",
+                "yellow",
+                "lambertian",
+                "lambertian",
+                "lambertian",
+                "yellow",
+                "lambertian"
+            ],
+            "position": [
+                0.0,
+                0.0,
+                0.85
+            ],
+            "rotation": [
+                -90.0,
+                -82.906,
+                0.0
+            ],
+            "scale": [
+                5.0,
+                5.0,
+                5.0
+            ]
+        },
+        {
+            "name": "thinwall",
+            "resource": "../meshes/thinwall.glb",
+            "materials": [
+                "opacityMap"
+            ],
+            "position": [
+                -2.0,
+                0.0,
+                0.0
+            ],
+            "rotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "scale": [
+                1.0,
+                1.0,
+                1.0
+            ]
+        },
+        {
+            "name": "plane",
+            "resource": "../meshes/plane.glb",
+            "materials": [
+                "texture_test"
+            ],
+            "position": [
+                -3.379,
+                0.0,
+                0.0
+            ],
+            "rotation": [
+                0.0,
+                0.0,
+                90.0
+            ],
+            "scale": [
+                10,
+                10,
+                10
+            ]
+        },
+        {
+            "name": "Ball",
+            "resource": "../meshes/Ball.glb",
+            "materials": [
+                "albedo_Black"
+            ],
+            "position": [
+                0.0,
+                0.0,
+                2.11
+            ],
+            "rotation": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "scale": [
+                0.01,
+                0.01,
+                0.01
+            ]
+        },
+        {
+            "name": "genshin_impact__amber",
+            "resource": "../meshes/amber/genshin_impact__amber.glb",
+            "materials": [
+                "Amber_0",
+                "Amber_0",
+                "Amber_1",
+                "Amber_2",
+                "Amber_2",
+                "Amber_1",
+                "Amber_2",
+                "Amber_3"
+            ],
+            "position": [
+                0.0,
+                0.0,
+                -3.0
+            ],
+            "rotation": [
+                0.0,
+                90.0,
+                0.0
+            ],
+            "scale": [
+                0.1,
+                0.1,
+                0.1
+            ]
+        }
+    ],
+    "Material": [
+        {
+            "name": "lambertian",
+            "albedo": [
+                0.5,
+                0.5,
+                0.5
+            ],
+            "specular": [
+                1,
+                1,
+                1
+            ],
+            "metallic": 0.0,
+            "roughness": 1,
+            "clearCoat": 0,
+            "clearCoatGlossiness": 0,
+            "emission": [
+                1,
+                1,
+                1
+            ],
+            "emissionIntensity": 0,
+            "ior": 1.001
+        },
+        {
+            "name": "glass",
+            "albedo": [
+                0,
+                0.8784313725490196,
+                1
+            ],
+            "specular": [
+                1,
+                1,
+                1
+            ],
+            "metallic": 0,
+            "roughness": 0,
+            "clearCoat": 1,
+            "clearCoatGlossiness": 0,
+            "ior": 1.35,
+            "transmission": 1,
+            "thickness": 1.88,
+            "attenuationDistance": 8.4
+        },
+        {
+            "name": "cerberus_mat",
+            "albedo": [
+                0.5,
+                0.5,
+                0.5
+            ],
+            "specular": [
+                1,
+                1,
+                1
+            ],
+            "roughness": 0,
+            "emission": [
+                1,
+                1,
+                1
+            ],
+            "emissionIntensity": 0,
+            "ior": 1.001,
+            "albedoMap": "../textures/cerberus_A.png",
+            "metallicmap": "../textures/cerberus_M.png",
+            "roughnessMap": "../textures/cerberus_R.png",
+            "normalMap": "../textures/cerberus_N.png"
+        },
+        {
+            "name": "Color #3d89c2ff",
+            "albedo": [
+                0.047058823529411764,
+                0.3333333333333333,
+                0.7019607843137254
+            ],
+            "specular": [
+                1,
+                1,
+                1
+            ],
+            "metallic": 0.0,
+            "roughness": 0,
+            "ior": 1.35,
+            "transmission": 1
+        },
+        {
+            "name": "yellow",
+            "albedo": [
+                1,
+                0.7137254901960784,
+                0.0196078431372549
+            ],
+            "specular": [
+                1,
+                1,
+                1
+            ],
+            "metallic": 0,
+            "roughness": 0,
+            "emissionIntensity": 0,
+            "ior": 1.001
+        },
+        {
+            "name": "opacity",
+            "albedo": [
+                0.9607843137254902,
+                0.0196078431372549,
+                0.0196078431372549
+            ],
+            "specular": [
+                1,
+                1,
+                1
+            ],
+            "metallic": 0.42,
+            "roughness": 0,
+            "ior": 1.1,
+            "transmission": 1.0,
+            "attenuationDistance": 13.98
+        },
+        {
+            "name": "opacityMap",
+            "albedo": [
+                1,
+                0,
+                0
+            ],
+            "specular": [
+                1,
+                1,
+                1
+            ],
+            "metallic": 0,
+            "roughness": 0,
+            "ior": 1.001,
+            "thickness": 1,
+            "opacityMap": "../textures/MetalWalkway013_4K_Opacity.jpg"
+        },
+        {
+            "name": "albedo_Black",
+            "specular": [
+                1,
+                1,
+                1
+            ],
+            "metallic": 0,
+            "roughness": 0,
+            "ior": 1.35,
+            "transmission": 1,
+            "normalMap": "../textures/cerberus_N.png"
+        },
+        {
+            "name": "damaged_helmet",
+            "metallic": 1,
+            "roughness": 0,
+            "ior": 1.001,
+            "albedoMap": "../meshes/helmet/Default_albedo.jpg",
+            "emission": [
+                1.0,
+                1.0,
+                1.0
+            ],
+            "emissionIntensity": 10.0,
+            "emissionMap": "../meshes/helmet/Default_emissive.jpg",
+            "roughnessMap": "../meshes/helmet/Default_roughness.jpg",
+            "normalMap": "../meshes/helmet/Default_normal.jpg",
+            "metallicMap": "../meshes/helmet/Default_metal.jpg"
+        },
+        {
+            "name": "texture_test",
+            "specular": [
+                1,
+                1,
+                1
+            ],
+            "emission": [
+                1,
+                1,
+                1
+            ],
+            "emissionIntensity": 10,
+            "roughness": 0,
+            "ior": 1.001,
+            "opacityMap": "../textures/MetalWalkway013_4K_Opacity.jpg"
+        },
+        {
+            "name": "Amber_0",
+            "albedoMap": "../meshes/amber/Image_0.png",
+            "metallic": 0,
+            "roughness": 0.8
+        },
+        {
+            "name": "Amber_1",
+            "albedoMap": "../meshes/amber/Image_1.png",
+            "metallic": 0,
+            "roughness": 0.8
+        },
+        {
+            "name": "Amber_2",
+            "albedoMap": "../meshes/amber/Image_2.png",
+            "metallic": 0,
+            "roughness": 0.8
+        },
+        {
+            "name": "Amber_3",
+            "albedoMap": "../meshes/amber/Image_3.png",
+            "metallic": 0,
+            "roughness": 0.8
+        }
+    ]
+}
